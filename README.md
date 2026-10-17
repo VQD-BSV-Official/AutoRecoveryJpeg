@@ -11,3 +11,10 @@
 
 
 Learn From: [JpegRepair](https://github.com/dmahurin/jpegrepair) · [JpegRecovery](https://github.com/euzun/jpeg-carver-csharp) · [JpegDecomp](https://github.com/albmac/jpeg-decomp) · [JPEG-Repair Toolkit](https://www.disktuna.com/jpgrepair-fix-and-repair-corrupt-jpeg-headers-and-invalid-markers/)
+
+
+## Usage - 🎬 Demo Video
+- **You can run the code directly using Python to update to the latest versions instead of waiting for the .exe release. Install any missing libraries, and if you encounter errors, please fix them and contribute your suggestions.**
+<a href="https://youtu.be/shIFJ2Jxqns">
+  <img src="https://img.youtube.com/vi/shIFJ2Jxqns/maxresdefault.jpg" width="600">
+</a>
