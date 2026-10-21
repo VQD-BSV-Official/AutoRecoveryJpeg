@@ -285,6 +285,21 @@ def get_last_mcu_xy():
 
 
 
+def auto_color(path):
+    img = Image.open(path)
+    exif = img.info.get('exif')                        # giữ EXIF (ngày chụp, hướng ảnh...)
+    a = np.asarray(img.convert('RGB')).astype(np.float32)
+
+    lo, hi = np.percentile(a, (1, 99), axis=(0, 1))    # kéo giãn từng kênh
+    a = np.clip((a - lo) / (hi - lo + 1e-6) * 255, 0, 255)
+    m = a.mean(axis=(0, 1))                            # gray-world
+    a = np.clip(a * (m.mean() / m), 0, 255)
+
+    kw = {'quality': 95}
+    if exif: kw['exif'] = exif
+    Image.fromarray(a.astype(np.uint8)).save(path, **kw)
+
+
 
 
 def check_thumbnail(p):
@@ -298,13 +313,16 @@ def check_thumbnail(p):
 
 # ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 # ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-import subprocess, os, sys, time, shutil, re
+import subprocess, os, sys, time, shutil, re, numpy as np
+from PIL import Image
 from textwrap import dedent
 from pathlib import Path
 # from DEF import Dectect_
 
 folder_path = input('\nFolder Encrypted: ')
+auto_color_ = input('Auto color? (Y or N): ')
 
+# short_info = input('Short infor? (Y or N): ')
 
 
 
@@ -338,5 +356,8 @@ for file_name in os.listdir(folder_path):
             if result2 != "Failed": # (Là thành công)
                 byte_w = s3_get_byte_w() # Lấy width và thay header
                 s4_replace_header(file_inp, byte_w, skip_bytes = 153605)
+
+                if auto_color_.upper() == 'Y': # Tự chỉnh màu (Ghi đè file)
+                    auto_color(f"{folder_path}/Repaired/{os.path.basename(file_inp).split('.')[0]}_R.JPG")
 
         print("====================DONE====================")
