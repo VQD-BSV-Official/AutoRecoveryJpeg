@@ -160,12 +160,17 @@ def s4_replace_header(file_inp, byte_w, skip_bytes):
     os.remove("CHECK_.JPG")
 
     # ////////////////////////////////////
-    pos = file_inp.upper().find(".JPG")
-    file_out = file_inp[:pos] if pos != -1 else file_inp
+    name = os.path.basename(file_inp)
+    pos = name.upper().find(".JPG")
+    file_out = name[:pos] if pos != -1 else name
+
+    out_dir = os.path.join(os.path.dirname(file_inp), "Repaired")
+    os.makedirs(out_dir, exist_ok=True) # Lưu ra folder Repaired
 
     if image_bytes:
-        with open(f"{file_out}_R.JPG", "wb") as w:
+        with open(os.path.join(out_dir, f"{file_out}_R.JPG"), "wb") as w:
             w.write(image_bytes)
+
     else: print("Fail can't write image_bytes (Code 168)")
 
 # //////////////////////////////////////////////////////////
@@ -282,6 +287,15 @@ def get_last_mcu_xy():
 
 
 
+def check_thumbnail(p):
+    d=open(p,'rb').read()
+    m=re.compile(b'\xff\xd8\xff[\xe0\xe1]').search(d,153605)
+    if m:
+        out_dir=os.path.join(os.path.dirname(p),'Repaired'); os.makedirs(out_dir,exist_ok=True)
+        open(os.path.join(out_dir,os.path.basename(p).split('.')[0]+' (thumbnail).JPG'),'wb').write(d[m.start():]);print('Offset thumbnail:',m.start())
+
+
+
 # ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 # ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 import subprocess, os, sys, time, shutil, re
@@ -298,8 +312,9 @@ for file_name in os.listdir(folder_path):
     if ".jpg" in file_name.lower():
 
         file_inp = f"{folder_path}/{file_name}"
+        
+
         # //////////////////////////////////////////////////////////
-        print("====================DONE====================")
         print(dedent(f"""
             [SETTING]
              ├─ Part size   - 153605 B
@@ -311,6 +326,7 @@ for file_name in os.listdir(folder_path):
              └─ 0xFFDA SOS  - ???
         """).strip())
 
+        check_thumbnail(file_inp) # 0. Kiểm tra có thumbnail không
         # 1. Kiểm tra file có lớn hơn 1MB không - Lấy 1MB?
         result = s1_cut_size(file_inp, skip_bytes = 153605)
 
