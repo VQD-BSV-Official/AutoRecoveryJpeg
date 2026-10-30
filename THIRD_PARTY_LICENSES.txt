@@ -1,0 +1,34 @@
+THIRD-PARTY SOFTWARE NOTICES
+============================
+This software includes or uses third-party components.
+
+1. JpegRepair - Copyright (c) 2017, Don Mahurin
+   Source: https://github.com/openrightorg/jpegrepair
+   Commit af7b75b
+   License: BSD-3-Clause 
+
+   Binary: Independently compiled from the original source code
+   [JpegRepair.exe] SHA256 15fda15469d0ce96789675973e3acd0b290d1043c3f5b68f905906e3bef83ae9
+
+============================
+2. JpegRecovery - Copyright (c) 2015, Erkam Uzun
+   Source1: https://github.com/euzun/jpeg-carver-csharp
+   Source2: https://github.com/euzun/jpgscraper
+   Commit b4f2102 & ee6441c
+   License: No license specified in the repository
+	
+   Binary: https://github.com/euzun/jpeg-carver-csharp/blob/master/JpegRecovery.exe
+   [JpegRecovery.exe] SHA256 56c51e4d6fa7a08d313bc350b9d228545f9089278f636bb2133b57329a5be0d1
+
+============================
+3. Jpeg-Decomp - Copyright (c) 2022, Alberto Maccioni
+   Source: https://github.com/albmac/jpeg-decomp
+   Commit a60e350
+   License: GPL-2.0
+
+   Binary: Independently compiled from the original source code
+   [JpegDecomp.exe] SHA256 477f8e2162ce2fe0a565fc6c6b541bb0b086ea395b426675daa86618c27993d7
+
+Each component remains subject to its applicable license.
+Required copyright notices and license texts are provided
+as required by the applicable licenses.
