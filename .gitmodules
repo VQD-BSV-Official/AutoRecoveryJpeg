@@ -1,0 +1,3 @@
+[submodule "tool/JpegRepair"]
+	path = tool/JpegRepair
+	url = https://github.com/openrightorg/jpegrepair.git
