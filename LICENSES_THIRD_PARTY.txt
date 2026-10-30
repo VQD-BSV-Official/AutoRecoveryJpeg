@@ -23,7 +23,8 @@ This software includes or uses third-party components.
    Source: https://github.com/albmac/jpeg-decomp
    License: GPL-2.0
 
-   Binary: Independently compiled from the original source code
+   Independently compiled from the original source code
+   Binary: https://github.com/VQD-BSV-Official/JpegDecomp
    [JpegDecomp.exe] SHA256 477f8e2162ce2fe0a565fc6c6b541bb0b086ea395b426675daa86618c27993d7
 
 Each component remains subject to its applicable license.
