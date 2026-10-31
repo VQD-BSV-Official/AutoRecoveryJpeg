@@ -87,6 +87,9 @@
        <height>21</height>
       </rect>
      </property>
+     <property name="text">
+      <string>JPG</string>
+     </property>
     </widget>
     <widget class="QLineEdit" name="lbl_size">
      <property name="geometry">

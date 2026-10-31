@@ -85,6 +85,7 @@ class Ui_MainWindow(object):
         self.grp_browse.setTitle(_translate("MainWindow", "Browse"))
         self.btn_input.setText(_translate("MainWindow", "input"))
         self.btn_output.setText(_translate("MainWindow", "output"))
+        self.le_ext.setText(_translate("MainWindow", "JPG"))
         self.lbl_size.setText(_translate("MainWindow", "153605"))
         self.label.setText(_translate("MainWindow", "Encrypted extension:            Encrypted part size:"))
         self.btn_start.setText(_translate("MainWindow", "Start"))

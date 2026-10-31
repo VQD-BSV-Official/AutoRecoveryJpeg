@@ -29,14 +29,26 @@ class MainWindow:
 
         self._init_signals()
 
-
+        
 
     def _init_signals(self):
         u = self.uic
 
+        # Setting
+        u.le_input.setPlaceholderText("Folder with encrypted file")
+        u.le_output.setPlaceholderText("Folder for repaired JPEG file")
 
+
+        # Button
         u.btn_input.clicked.connect(self.open_folder_inp)
         u.btn_output.clicked.connect(self.open_folder_out)
+
+        u.btn_start.clicked.connect(self.start_main)
+
+
+
+    def start_main(self):
+        pass
 
 
 
@@ -58,7 +70,8 @@ class MainWindow:
         if self.folder_out:
             self.uic.le_output.setText(self.folder_out)
 
-
+# ════════════════════════════════════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════════════════════════════════════
 
 
 
