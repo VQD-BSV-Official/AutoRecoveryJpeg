@@ -1,4 +1,5 @@
-import sys
+import sys, os
+import main_cmd
 
 
 from PyQt6.QtWidgets import (
@@ -55,11 +56,13 @@ class MainWindow:
         byte_ = self.uic.le_size.text()
 
 
+        auto_color_ = "N"
         if self.uic.chk_auto_color.isChecked():
             auto_color_ = "Y"
 
         if os.path.exists(inp_path):
-            self.main_cmd.run(inp_path, out_path, ext, auto_color_)
+            print("Chay file")
+            main_cmd.run(inp_path, out_path, ext.lower(), auto_color_)
 
 
 

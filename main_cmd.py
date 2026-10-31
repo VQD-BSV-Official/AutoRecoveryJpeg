@@ -1,3 +1,11 @@
+import subprocess, os, sys, time, shutil, re, numpy as np
+from PIL import Image
+from textwrap import dedent
+from pathlib import Path
+
+
+
+
 # Step1. Kiểm tra file có lớn hơn 1MB không - Lấy 1MB? ......OK
 def s1_cut_size(file_inp, skip_bytes):
     ONE_MB = 524288 # Nửa 1MB, 1024 * 1024  # 1MB = 1,048,576 bytes
@@ -169,7 +177,7 @@ def s4_replace_header(file_inp, byte_w, skip_bytes, out_dir):
         with open(os.path.join(out_dir, f"{file_out}_R.JPG"), "wb") as w:
             w.write(image_bytes)
 
-            return os.path.join(out_dir, f"{file_out}_R.JPG" # trả về đường dẫn file đã lưu
+            return os.path.join(out_dir, f"{file_out}_R.JPG") # trả về đường dẫn file đã lưu
 
     print("Fail can't write image_bytes (Code 168)")
     return None
@@ -345,7 +353,7 @@ def run(folder_path, out_dir, ext, auto_color_):
 
                 if result2 != "Failed": # (Là thành công)
                     byte_w = s3_get_byte_w() # Lấy width và thay header
-                    out_path = s4_replace_header(file_inp, byte_w, skip_bytes = 153605, out_dir)
+                    out_path = s4_replace_header(file_inp, byte_w, 153605, out_dir)
 
                     if auto_color_.upper() == 'Y': # Tự chỉnh màu (Ghi đè file)
                         auto_color(out_path)
@@ -356,12 +364,6 @@ def run(folder_path, out_dir, ext, auto_color_):
 
 
 
-
-
-import subprocess, os, sys, time, shutil, re, numpy as np
-from PIL import Image
-from textwrap import dedent
-from pathlib import Path
 
 
 
