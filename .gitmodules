@@ -7,3 +7,6 @@
 [submodule "tool/JpegRecovery"]
 	path = tool/JpegRecovery
 	url = https://github.com/euzun/jpeg-carver-csharp.git
+[submodule "tool/JpegDecomp"]
+	path = tool/JpegDecomp
+	url = https://github.com/VQD-BSV-Official/JpegDecomp
