@@ -48,7 +48,19 @@ class MainWindow:
 
 
     def start_main(self):
-        pass
+        inp_path = self.uic.le_input.text()
+        out_path = self.uic.le_output.text()
+
+        ext = self.uic.le_ext.text()
+        byte_ = self.uic.le_size.text()
+
+
+        if self.uic.chk_auto_color.isChecked():
+            auto_color_ = "Y"
+
+        if os.path.exists(inp_path):
+            self.main_cmd.run(inp_path, out_path, ext, auto_color_)
+
 
 
 

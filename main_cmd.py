@@ -315,55 +315,62 @@ def check_thumbnail(p, out_dir):
 
 # ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 # ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+def run(folder_path, out_dir, ext, auto_color_):
+    for file_name in os.listdir(folder_path):
+        if f".{ext}" in file_name.lower():
+
+            file_inp = f"{folder_path}/{file_name}"
+            
+
+            # //////////////////////////////////////////////////////////
+            print(dedent(f"""
+                [SETTING]
+                ├─ Part size   - 153605 B
+                ├─ Get data    - 1MB/2
+                ├─ 0xFFD8 SOI  - ???
+                ├─ 0xFFDB DQT  - 100% 
+                ├─ 0xFFC0 SOF0 - WidthAuto, HeightAuto
+                ├─ 0xFFC4 DHT  - YAuto, Cb11, Cr11
+                └─ 0xFFDA SOS  - ???
+            """).strip())
+
+            check_thumbnail(file_inp, out_dir) # 0. Kiểm tra có thumbnail không
+            # 1. Kiểm tra file có lớn hơn 1MB không - Lấy 1MB?
+            result = s1_cut_size(file_inp, skip_bytes = 153605)
+
+            if result != "Failed": # (Là thành công)
+                # Dùng JpegRecovery để khôi phục lấy width
+                result2 = s2_recover_jpeg()
+
+
+                if result2 != "Failed": # (Là thành công)
+                    byte_w = s3_get_byte_w() # Lấy width và thay header
+                    out_path = s4_replace_header(file_inp, byte_w, skip_bytes = 153605, out_dir)
+
+                    if auto_color_.upper() == 'Y': # Tự chỉnh màu (Ghi đè file)
+                        auto_color(out_path)
+
+            print("====================DONE====================")
+
+
+
+
+
+
+
 import subprocess, os, sys, time, shutil, re, numpy as np
 from PIL import Image
 from textwrap import dedent
 from pathlib import Path
-# from DEF import Dectect_
-
-if len(sys.argv) < 4:
-    print("Usage: main_auto.py <path_inp> <path_out> <extension> [Y/N auto color]")
-    sys.exit(1)
-
-folder_path = sys.argv[1]
-out_dir     = sys.argv[2]
-ext         = sys.argv[3]
-
-auto_color_ = sys.argv[4] if len(sys.argv) > 4 else "N"
 
 
-for file_name in os.listdir(folder_path):
-    if f".{ext}" in file_name.lower():
 
-        file_inp = f"{folder_path}/{file_name}"
-        
+# if len(sys.argv) < 4:
+#     print("Usage: main_cmd.py <path_inp> <path_out> <extension> [Y/N auto color]")
+#     sys.exit(1)
 
-        # //////////////////////////////////////////////////////////
-        print(dedent(f"""
-            [SETTING]
-             ├─ Part size   - 153605 B
-             ├─ Get data    - 1MB/2
-             ├─ 0xFFD8 SOI  - ???
-             ├─ 0xFFDB DQT  - 100% 
-             ├─ 0xFFC0 SOF0 - WidthAuto, HeightAuto
-             ├─ 0xFFC4 DHT  - YAuto, Cb11, Cr11
-             └─ 0xFFDA SOS  - ???
-        """).strip())
+# folder_path = sys.argv[1]
+# out_dir     = sys.argv[2]
+# ext         = sys.argv[3]
 
-        check_thumbnail(file_inp, out_dir) # 0. Kiểm tra có thumbnail không
-        # 1. Kiểm tra file có lớn hơn 1MB không - Lấy 1MB?
-        result = s1_cut_size(file_inp, skip_bytes = 153605)
-
-        if result != "Failed": # (Là thành công)
-            # Dùng JpegRecovery để khôi phục lấy width
-            result2 = s2_recover_jpeg()
-
-
-            if result2 != "Failed": # (Là thành công)
-                byte_w = s3_get_byte_w() # Lấy width và thay header
-                out_path = s4_replace_header(file_inp, byte_w, skip_bytes = 153605, out_dir)
-
-                if auto_color_.upper() == 'Y': # Tự chỉnh màu (Ghi đè file)
-                    auto_color(out_path)
-
-        print("====================DONE====================")
+# auto_color_ = sys.argv[4] if len(sys.argv) > 4 else "N"
