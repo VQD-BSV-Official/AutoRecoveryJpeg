@@ -19,7 +19,6 @@
 This project was developed through independent research and learning from the following resources:
 
 - [RecoverJpeg](https://github.com/VQD-BSV-Official/RecoveryJpeg)
-
 - [JpegRepair](https://github.com/dmahurin/jpegrepair)
 - [JpegRecovery](https://github.com/euzun/jpeg-carver-csharp)
 - [JpegDecomp](https://github.com/albmac/jpeg-decomp)
