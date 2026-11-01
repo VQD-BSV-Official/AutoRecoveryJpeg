@@ -317,7 +317,16 @@ def check_thumbnail(p, out_dir):
     m=re.compile(b'\xff\xd8\xff[\xe0\xe1]').search(d, 153605)
     if m:
         os.makedirs(out_dir,exist_ok=True)
-        open(os.path.join(out_dir,os.path.basename(p).split('.')[0]+' (thumbnail).JPG'),'wb').write(d[m.start():]);print('Offset thumbnail:',m.start())
+        open(os.path.join(out_dir, os.path.basename(p).split('.')[0]+' (thumbnail).JPG'),'wb').write(d[m.start():]);print('Offset thumbnail:',m.start())
+
+
+
+
+        with open(f"{os.path.basename(p).split('.')[0]}_v2.JPG", "wb") as w:
+            w.write(d[:m.start()])
+        # Ghi offset truoc thumbnail
+
+        return 'Y'
 
 
 
@@ -342,7 +351,11 @@ def run(folder_path, out_dir, ext, auto_color_):
                 └─ 0xFFDA SOS  - ???
             """).strip())
 
-            check_thumbnail(file_inp, out_dir) # 0. Kiểm tra có thumbnail không
+            kq_chk = check_thumbnail(file_inp, out_dir) # 0. Kiểm tra có thumbnail không
+            if kq_chk == "Y":
+                file_inp = f"{os.path.basename(file_inp).split('.')[0]}_v2.JPG"
+
+
             # 1. Kiểm tra file có lớn hơn 1MB không - Lấy 1MB?
             result = s1_cut_size(file_inp, skip_bytes = 153605)
 
@@ -358,6 +371,9 @@ def run(folder_path, out_dir, ext, auto_color_):
                     if auto_color_.upper() == 'Y': # Tự chỉnh màu (Ghi đè file)
                         auto_color(out_path)
 
+
+
+            if "_v2.JPG" in f"{file_inp}": os.remove(file_inp)
             print("====================DONE====================")
 
 

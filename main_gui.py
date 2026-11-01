@@ -61,7 +61,7 @@ class MainWindow:
             auto_color_ = "Y"
 
         if os.path.exists(inp_path):
-            print("Chay file")
+            # print("Chay file")
             main_cmd.run(inp_path, out_path, ext.lower(), auto_color_)
 
 
