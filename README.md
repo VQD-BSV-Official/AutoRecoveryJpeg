@@ -25,6 +25,8 @@ This project was developed through independent research and learning from the fo
 - [JPEGVisualRepairTool](https://github.com/albmac/JPEGVisualRepairTool)
 - [JpegRepairShop](https://anderspedersen.net/jpegrepair/)
 - [Wikipedia – JPEG](https://en.wikipedia.org/wiki/JPEG)
+* E. Uzun and H. T. Sencar, “[JpgScraper: An Advanced Carver for JPEG Files](https://doi.org/10.1109/TIFS.2019.2953382)”, IEEETransactions on Information Forensics and Security, 2019.
+* E. Uzun and H. T. Sencar, “[Carving orphaned jpeg file fragments](https://www.researchgate.net/publication/275044127_Carving_Orphaned_JPEG_File_Fragments)”, IEEETransactions on Information Forensics and Security, vol. 10, no. 8, pp.1549–1563, 2015.
 
 Thanks to the developers and communities behind these resources.
 
