@@ -47,6 +47,10 @@ pip install PyQt6 pillow
 python "main_gui.py"
 ```
 
+```bash
+python "main_auto.py"
+```
+
 
 
 
