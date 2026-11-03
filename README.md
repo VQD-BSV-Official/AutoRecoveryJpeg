@@ -33,27 +33,53 @@ Thanks to the developers and communities behind these resources.
 ---
 
 ## 🚀 Running the Application
+> [!Note]
+> Run from the folder that contains `Tool/` (`JpegRecovery.exe`, `JpegRepair.exe`, `JpegDecomp.exe`). The CLI switches to the script folder automatically; the module and the GUI do not.
+
+- **Libs**
+```
+pip install PyQt6 pillow numpy
+```
+
+
+
+- **Run CLI**
+```bash
+python main_cmd.py <input> [out] [auto_color Y/N] [byte_enc] [ext]
+```
+| Argument     | Default            | Description                                   |
+|--------------|--------------------|-----------------------------------------------|
+| `input`      | *(required)*       | Folder containing the encrypted files         |
+| `out`        | `<input>/Repaired` | Folder for repaired JPEG files                |
+| `auto_color` | `N`                | `Y` = auto-adjust colors, `N` = off           |
+| `byte_enc`   | `153605`           | Size of the encrypted part in bytes           |
+| `ext`        | `jpg`              | Extension of the encrypted files              |
+
+
+Arguments are positional: to set `byte_enc`, pass `out` and `auto_color` first.
+
+
+```bash
+# Defaults (Recomen)
+python main_cmd.py "D:/Data/Ransom"
+ 
+# Custom output, auto color, encrypted part size
+python main_cmd.py "D:/Data/Ransom" "D:/Data/Fixed" Y 153605
+```
+ 
+- **Use as a module**
+```python
+import main_cmd
+ 
+main_cmd.run(r"D:/Data/Ransom", out_dir=None, ext="jpg", auto_color_="N", byte_enc=153605)
+```
+
+
 
 - **Build Executable**
 ```bash
 pyinstaller --noconfirm --onefile --windowed --icon "resources/logo.ico" --name "AutoRecoveryJpeg" --clean --log-level "INFO" --noupx --version-file "VERSION" "main_gui.py"
 ```
-
-- **Libs**
-```
-pip install PyQt6 pillow
-```
-
-- **Run**
-```bash
-python "main_gui.py"
-```
-
-```bash
-python "main_auto.py"
-```
-
-
 
 
 ## Usage - 🎬 Demo Video
