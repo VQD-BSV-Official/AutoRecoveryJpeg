@@ -312,9 +312,9 @@ def auto_color(path):
 
 
 
-def check_thumbnail(p, out_dir):
+def check_thumbnail(p, out_dir, skip):
     d=open(p,'rb').read()
-    m=re.compile(b'\xff\xd8\xff[\xe0\xe1]').search(d, 153605)
+    m=re.compile(b'\xff\xd8\xff[\xe0\xe1]').search(d, skip)
     if m:
         os.makedirs(out_dir,exist_ok=True)
         open(os.path.join(out_dir, os.path.basename(p).split('.')[0]+' (thumbnail).JPG'),'wb').write(d[m.start():]);print('Offset thumbnail:',m.start())
@@ -332,10 +332,10 @@ def check_thumbnail(p, out_dir):
 
 # ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 # ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-def _one(file_inp, out_dir, auto_color_):
-    print(dedent("""
+def _one(file_inp, out_dir, auto_color_, skip):
+    print(dedent(f"""
         [SETTING]
-        ├─ Part size   - 153605 B
+        ├─ Part size   - {skip} B
         ├─ Get data    - 1MB/2
         ├─ 0xFFD8 SOI  - ???
         ├─ 0xFFDB DQT  - 100% 
@@ -346,11 +346,11 @@ def _one(file_inp, out_dir, auto_color_):
 
     out_path = tmp = None
     try:
-        if check_thumbnail(file_inp, out_dir) == "Y":
+        if check_thumbnail(file_inp, out_dir, skip) == "Y":
             file_inp = tmp = f"{os.path.basename(file_inp).split('.')[0]}_v2.JPG"
 
-        if s1_cut_size(file_inp, skip_bytes=153605) != "Failed" and s2_recover_jpeg() != "Failed":
-            out_path = s4_replace_header(file_inp, s3_get_byte_w(), 153605, out_dir)
+        if s1_cut_size(file_inp, skip) != "Failed" and s2_recover_jpeg() != "Failed":
+            out_path = s4_replace_header(file_inp, s3_get_byte_w(), skip, out_dir)
             if out_path and auto_color_.upper() == 'Y':
                 auto_color(out_path)
     finally:
@@ -358,29 +358,32 @@ def _one(file_inp, out_dir, auto_color_):
     return out_path
 
 
-def run(folder_path, out_dir, ext, auto_color_, cb=lambda *a: None):
+def run(folder_path, out_dir=None, ext="jpg", auto_color_="N", byte_enc=153605, cb=lambda *a: None, st=lambda *a: None):
+    out_dir = out_dir or os.path.join(folder_path, "Repaired")
+    ext = ext.lower().lstrip(".")
     files = [f for f in os.listdir(folder_path) if f".{ext}" in f.lower()]
     for i, name in enumerate(files, 1):
+        st(i, len(files), name)
         try:
-            out = _one(f"{folder_path}/{name}", out_dir, auto_color_)
+            out = _one(f"{folder_path}/{name}", out_dir, auto_color_, byte_enc)
         except Exception as e:  # file lỗi không làm dừng cả batch
             out = None; print(f"ERR {name}: {e}")
         print("====================DONE====================")
         cb(i, len(files), name, out)
 
 
+if __name__ == "__main__":
+    import argparse
+    p = argparse.ArgumentParser(description="main_cmd.py <input> [out] [auto_color Y/N] [byte_enc] [ext]")
+    p.add_argument("input")
+    p.add_argument("out", nargs="?")                          # mặc định: <input>/Repaired
+    p.add_argument("auto_color", nargs="?", default="N")
+    p.add_argument("byte_enc", nargs="?", type=int, default=153605)
+    p.add_argument("ext", nargs="?", default="jpg")
+    a = p.parse_args()
 
-
-
-
-
-
-# if len(sys.argv) < 4:
-#     print("Usage: main_cmd.py <path_inp> <path_out> <extension> [Y/N auto color]")
-#     sys.exit(1)
-
-# folder_path = sys.argv[1]
-# out_dir     = sys.argv[2]
-# ext         = sys.argv[3]
-
-# auto_color_ = sys.argv[4] if len(sys.argv) > 4 else "N"
+    # Tool/ và file tạm dùng đường dẫn tương đối => chdir về thư mục script sau khi resolve path
+    inp = os.path.abspath(a.input)
+    out = os.path.abspath(a.out) if a.out else None
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    run(inp, out, a.ext, a.auto_color, a.byte_enc)
