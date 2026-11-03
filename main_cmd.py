@@ -332,49 +332,41 @@ def check_thumbnail(p, out_dir):
 
 # ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 # ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-def run(folder_path, out_dir, ext, auto_color_):
-    for file_name in os.listdir(folder_path):
-        if f".{ext}" in file_name.lower():
+def _one(file_inp, out_dir, auto_color_):
+    print(dedent("""
+        [SETTING]
+        ├─ Part size   - 153605 B
+        ├─ Get data    - 1MB/2
+        ├─ 0xFFD8 SOI  - ???
+        ├─ 0xFFDB DQT  - 100% 
+        ├─ 0xFFC0 SOF0 - WidthAuto, HeightAuto
+        ├─ 0xFFC4 DHT  - YAuto, Cb11, Cr11
+        └─ 0xFFDA SOS  - ???
+    """).strip())
 
-            file_inp = f"{folder_path}/{file_name}"
-            
+    out_path = tmp = None
+    try:
+        if check_thumbnail(file_inp, out_dir) == "Y":
+            file_inp = tmp = f"{os.path.basename(file_inp).split('.')[0]}_v2.JPG"
 
-            # //////////////////////////////////////////////////////////
-            print(dedent(f"""
-                [SETTING]
-                ├─ Part size   - 153605 B
-                ├─ Get data    - 1MB/2
-                ├─ 0xFFD8 SOI  - ???
-                ├─ 0xFFDB DQT  - 100% 
-                ├─ 0xFFC0 SOF0 - WidthAuto, HeightAuto
-                ├─ 0xFFC4 DHT  - YAuto, Cb11, Cr11
-                └─ 0xFFDA SOS  - ???
-            """).strip())
-
-            kq_chk = check_thumbnail(file_inp, out_dir) # 0. Kiểm tra có thumbnail không
-            if kq_chk == "Y":
-                file_inp = f"{os.path.basename(file_inp).split('.')[0]}_v2.JPG"
-
-
-            # 1. Kiểm tra file có lớn hơn 1MB không - Lấy 1MB?
-            result = s1_cut_size(file_inp, skip_bytes = 153605)
-
-            if result != "Failed": # (Là thành công)
-                # Dùng JpegRecovery để khôi phục lấy width
-                result2 = s2_recover_jpeg()
+        if s1_cut_size(file_inp, skip_bytes=153605) != "Failed" and s2_recover_jpeg() != "Failed":
+            out_path = s4_replace_header(file_inp, s3_get_byte_w(), 153605, out_dir)
+            if out_path and auto_color_.upper() == 'Y':
+                auto_color(out_path)
+    finally:
+        if tmp and os.path.exists(tmp): os.remove(tmp)
+    return out_path
 
 
-                if result2 != "Failed": # (Là thành công)
-                    byte_w = s3_get_byte_w() # Lấy width và thay header
-                    out_path = s4_replace_header(file_inp, byte_w, 153605, out_dir)
-
-                    if auto_color_.upper() == 'Y': # Tự chỉnh màu (Ghi đè file)
-                        auto_color(out_path)
-
-
-
-            if "_v2.JPG" in f"{file_inp}": os.remove(file_inp)
-            print("====================DONE====================")
+def run(folder_path, out_dir, ext, auto_color_, cb=lambda *a: None):
+    files = [f for f in os.listdir(folder_path) if f".{ext}" in f.lower()]
+    for i, name in enumerate(files, 1):
+        try:
+            out = _one(f"{folder_path}/{name}", out_dir, auto_color_)
+        except Exception as e:  # file lỗi không làm dừng cả batch
+            out = None; print(f"ERR {name}: {e}")
+        print("====================DONE====================")
+        cb(i, len(files), name, out)
 
 
 

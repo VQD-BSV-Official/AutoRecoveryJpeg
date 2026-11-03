@@ -2,6 +2,8 @@ import sys, os
 import main_cmd
 
 
+from PyQt6.QtCore import QThread, pyqtSignal, Qt
+from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -18,6 +20,21 @@ from PyQt6.QtWidgets import (
 from views.Sreen.GUI import Ui_MainWindow
 
 
+
+class Worker(QThread):
+    prog = pyqtSignal(int, int, str, str, QImage)
+
+    def __init__(self, args, size):
+        super().__init__()
+        self.args, self.size = args, size
+
+    def run(self):
+        def cb(i, n, name, out):
+            # scale ở thread phụ, GUI chỉ việc setPixmap
+            img = QImage(out).scaled(self.size, Qt.AspectRatioMode.KeepAspectRatio,
+                                     Qt.TransformationMode.SmoothTransformation) if out else QImage()
+            self.prog.emit(i, n, name, out or "", img)
+        main_cmd.run(*self.args, cb)
 
 
 
@@ -38,6 +55,7 @@ class MainWindow:
         # Setting
         u.le_input.setPlaceholderText("Folder with encrypted file")
         u.le_output.setPlaceholderText("Folder for repaired JPEG file")
+        u.lbl_view.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
 
         # Button
@@ -49,20 +67,24 @@ class MainWindow:
 
 
     def start_main(self):
-        inp_path = self.uic.le_input.text()
-        out_path = self.uic.le_output.text()
+        u = self.uic
+        inp_path, out_path = u.le_input.text(), u.le_output.text()
+        if not os.path.exists(inp_path): return
 
-        ext = self.uic.le_ext.text()
-        byte_ = self.uic.le_size.text()
+        u.text_log.clear(); u.pb_progress.setValue(0); u.btn_start.setEnabled(False)
+        # temp file dùng chung cwd => chỉ 1 worker tại 1 thời điểm (nút Start đã khoá)
+        self.w = Worker((inp_path, out_path, u.le_ext.text().lower(),
+                         "Y" if u.chk_auto_color.isChecked() else "N"), u.lbl_view.size())
+        self.w.prog.connect(self.on_prog)
+        self.w.finished.connect(lambda: u.btn_start.setEnabled(True))
+        self.w.start()
 
 
-        auto_color_ = "N"
-        if self.uic.chk_auto_color.isChecked():
-            auto_color_ = "Y"
-
-        if os.path.exists(inp_path):
-            # print("Chay file")
-            main_cmd.run(inp_path, out_path, ext.lower(), auto_color_)
+    def on_prog(self, i, n, name, out, img):
+        u = self.uic
+        u.text_log.append(f"{'OK...' if out else 'NO...'} {name}")
+        u.pb_progress.setValue(i * 100 // n)
+        if out: u.lbl_view.setPixmap(QPixmap.fromImage(img))
 
 
 
