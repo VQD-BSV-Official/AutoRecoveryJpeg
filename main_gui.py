@@ -23,6 +23,7 @@ from views.Sreen.GUI import Ui_MainWindow
 
 class Worker(QThread):
     prog = pyqtSignal(int, int, str, str, QImage)
+    begin = pyqtSignal(int, int, str)
 
     def __init__(self, args, size):
         super().__init__()
@@ -34,7 +35,7 @@ class Worker(QThread):
             img = QImage(out).scaled(self.size, Qt.AspectRatioMode.KeepAspectRatio,
                                      Qt.TransformationMode.SmoothTransformation) if out else QImage()
             self.prog.emit(i, n, name, out or "", img)
-        main_cmd.run(*self.args, cb)
+        main_cmd.run(*self.args, cb, self.begin.emit)
 
 
 
@@ -71,19 +72,34 @@ class MainWindow:
         inp_path, out_path = u.le_input.text(), u.le_output.text()
         if not os.path.exists(inp_path): return
 
-        u.text_log.clear(); u.pb_progress.setValue(0); u.btn_start.setEnabled(False)
+        u.text_log.clear(); u.btn_start.setEnabled(False)
+        u.pb_progress.setRange(0, 0)  # busy cho tới khi biết tổng số file
         # temp file dùng chung cwd => chỉ 1 worker tại 1 thời điểm (nút Start đã khoá)
         self.w = Worker((inp_path, out_path, u.le_ext.text().lower(),
-                         "Y" if u.chk_auto_color.isChecked() else "N"), u.lbl_view.size())
+                         "Y" if u.chk_auto_color.isChecked() else "N",
+                         int(u.le_size.text()) if u.le_size.text().isdigit() else 153605), u.lbl_view.size())
+        u.text_log.append("START")
+        self.w.begin.connect(self.on_begin)
         self.w.prog.connect(self.on_prog)
-        self.w.finished.connect(lambda: u.btn_start.setEnabled(True))
+        self.w.finished.connect(self.on_done)
         self.w.start()
 
+
+    def on_begin(self, i, n, name):
+        u = self.uic
+        if i == 1: u.pb_progress.setRange(0, n); u.pb_progress.setValue(0)
+        # u.text_log.append(f"... {name}")
+
+    def on_done(self):
+        u = self.uic
+        if u.pb_progress.maximum() == 0:  # không có file nào
+            u.pb_progress.setRange(0, 1); u.text_log.append("No file")
+        u.btn_start.setEnabled(True)
 
     def on_prog(self, i, n, name, out, img):
         u = self.uic
         u.text_log.append(f"{'OK...' if out else 'NO...'} {name}")
-        u.pb_progress.setValue(i * 100 // n)
+        u.pb_progress.setValue(i)
         if out: u.lbl_view.setPixmap(QPixmap.fromImage(img))
 
 
