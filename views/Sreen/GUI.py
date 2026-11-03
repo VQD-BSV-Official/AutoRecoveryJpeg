@@ -63,13 +63,13 @@ class Ui_MainWindow(object):
         self.pb_progress = QtWidgets.QProgressBar(parent=self.centralwidget)
         self.pb_progress.setGeometry(QtCore.QRect(470, 20, 16, 491))
         self.pb_progress.setLayoutDirection(QtCore.Qt.LayoutDirection.LeftToRight)
-        self.pb_progress.setProperty("value", 24)
+        self.pb_progress.setProperty("value", 0)
         self.pb_progress.setOrientation(QtCore.Qt.Orientation.Vertical)
         self.pb_progress.setTextDirection(QtWidgets.QProgressBar.Direction.TopToBottom)
         self.pb_progress.setObjectName("pb_progress")
-        self.textBrowser = QtWidgets.QTextBrowser(parent=self.centralwidget)
-        self.textBrowser.setGeometry(QtCore.QRect(250, 240, 211, 271))
-        self.textBrowser.setObjectName("textBrowser")
+        self.text_log = QtWidgets.QTextBrowser(parent=self.centralwidget)
+        self.text_log.setGeometry(QtCore.QRect(250, 240, 211, 271))
+        self.text_log.setObjectName("text_log")
         self.lbl_view = QtWidgets.QLabel(parent=self.centralwidget)
         self.lbl_view.setGeometry(QtCore.QRect(10, 240, 231, 271))
         self.lbl_view.setFrameShape(QtWidgets.QFrame.Shape.Box)
@@ -93,7 +93,7 @@ class Ui_MainWindow(object):
         self.chk_auto_color.setText(_translate("MainWindow", "Auto-adjust colors"))
         self.chk_auto_detect.setText(_translate("MainWindow", "Automatic detection (no sample needed)"))
         self.chk_subfolders.setText(_translate("MainWindow", "Process subfolders"))
-        self.textBrowser.setHtml(_translate("MainWindow", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
+        self.text_log.setHtml(_translate("MainWindow", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\n"
 "p, li { white-space: pre-wrap; }\n"
 "hr { height: 1px; border-width: 0; }\n"
