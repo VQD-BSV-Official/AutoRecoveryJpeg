@@ -1,6 +1,3 @@
-[submodule "tool/JpegRepair"]
-	path = tool/JpegRepair
-	url = https://github.com/openrightorg/jpegrepair.git
 [submodule "tool/JpegRecoveryC#"]
 	path = "tool/JpegRecoveryC#"
 	url = https://github.com/euzun/jpgscraper.git
