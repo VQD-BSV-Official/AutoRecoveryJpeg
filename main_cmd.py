@@ -1,303 +1,175 @@
-import subprocess, os, sys, time, shutil, re, numpy as np
+import subprocess, os, time, re, numpy as np
 from PIL import Image
 from textwrap import dedent
-from pathlib import Path
+from controllers import jpgfix2, MCUDecode
+
+copyright_ = "FFD8FFE1007C45786966000049492A000800000003000E010200270000003200000012010300010000000100000031010200190000005A000000000000005265706169726564206279205675205175616E6720446169200000000000000000000009000000004175746F5265636F766572794A7065672000000000000000000000000000"
+
+MCU_XY = re.compile(r"\((\d+),(\d+)\)")
 
 
-
-
-# Step1. Kiểm tra file có lớn hơn 1MB không - Lấy 1MB? ......OK
-def s1_cut_size(file_inp, skip_bytes):
-    ONE_MB = 524288 # Nửa 1MB, 1024 * 1024  # 1MB = 1,048,576 bytes
+# Step1. Cắt `chunk` byte sau skip_bytes ra temp_rp
+def s1_cut_size(file_inp, skip_bytes, chunk=524288):
     size = os.path.getsize(file_inp)
+    n = max(0, min(size - skip_bytes, chunk))
+    if n:
+        with open(file_inp, "rb") as f_in, open("temp_rp", "wb") as f_out:
+            f_in.seek(skip_bytes)
+            f_out.write(f_in.read(n))
 
-    if size <= skip_bytes:
-        print(dedent(f"""
-            [CUT]
-             ├─ File Size  : {size:>12,} B
-             ├─ Skip Offset: 0 B
-             └─ Output Data: 0 B
-        """).strip())
-        return "Failed"
-
-    with open(file_inp, "rb") as f_in, open("temp_rp", "wb") as f_out:
-        # Bỏ phần đầu, VD: 153605
-        f_in.seek(skip_bytes)
-        remain = size - skip_bytes
-        read_size = min(remain, ONE_MB) # Lấy 1Mb từ đầu mình cắt ra
-
-        f_out.write(f_in.read(read_size))
-
-    print()
     print(dedent(f"""
         [CUT]
          ├─ File Size  : {size:>12,} B
-         ├─ Skip Offset: {skip_bytes:>12,} B
-         └─ Output Data: {read_size:>12,} B
+         ├─ Skip Offset: {skip_bytes if n else 0:>12,} B
+         └─ Output Data: {n:>12,} B
     """).strip())
+    return None if n else "Failed"
 
-# //////////////////////////////////////////////////////////
-# //////////////////////////////////////////////////////////
-# Step2. JpegRecovery xử lý để ra ảnh - lấy kích thức width....OK
+
+# Step2. JpegRecovery xử lý để ra ảnh - lấy width
 def s2_recover_jpeg():
-    startupinfo = subprocess.STARTUPINFO()
-    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-    startupinfo.wShowWindow = subprocess.SW_HIDE  # Ẩn cửa sổ
+    si = subprocess.STARTUPINFO()
+    si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    si.wShowWindow = subprocess.SW_HIDE
 
-    pr0c = subprocess.Popen(
+    out = subprocess.run(
         ["./Tool/JpegRecovery.exe", "temp_rp"],
-        startupinfo=startupinfo,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-        text=True,          # trả về string
-        encoding="utf-8",   # tránh lỗi font
-        errors="ignore"
-    )
+        startupinfo=si, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+        text=True, encoding="utf-8", errors="ignore"
+    ).stdout
 
-    output, _ = pr0c.communicate()   # <-- Dữ liệu mà phần mềm in ra
-    # ///////////////////////////////////////////////////////// MAKUP cho đẹp
-    data = {k.strip(): v.strip()
-            for l in output.splitlines() if ":" in l
-            for k, v in [l.split(":", 1)]}
+    lines = out.splitlines()
+    data = {k.strip(): v.strip() for l in lines if ":" in l for k, v in [l.split(":", 1)]}
+    blocks = next((l for l in lines if ";" in l), None)
 
-    blocks = next((l for l in output.splitlines() if ";" in l), None)
+    num = lambda k, fmt: format(int(data[k]), fmt) if data.get(k, "").isdigit() else "Unknown"
+    frag = data.get("Fragment Saved", "Unknown")
 
-
-    # ===== Safe get =====
-    mcu      = data.get("MCU")
-    tail     = data.get("Tail")
-    fragment = data.get("Fragment Saved", "Unknown")
-
-    # ===== Format values trước khi print =====
-    block_val = ",".join(blocks.split(";")) if blocks else "Unknown"
-    mcu_val  = f"{int(mcu):}" if mcu and mcu.isdigit() else "Unknown"
-    tail_val = f"{int(tail):,}" if tail and tail.isdigit() else "Unknown"
-
-    status_ = "SUCCESS" if fragment != "Unknown" else "FAILED"
-
-    print()
     print(dedent(f"""
         [RECOVER]
-         ├─ MCUs    : {mcu_val}
-         ├─ Block   : {block_val}
-         ├─ Tail    : {tail_val}
-         ├─ Fragment: {fragment}
-         └─ Status  : {status_}
+         ├─ MCUs    : {num("MCU", "")}
+         ├─ Block   : {blocks.replace(";", ",") if blocks else "Unknown"}
+         ├─ Tail    : {num("Tail", ",")}
+         ├─ Fragment: {frag}
+         └─ Status  : {"SUCCESS" if frag != "Unknown" else "FAILED"}
     """).strip())
 
-
-
     time.sleep(0.25)
-    if os.path.exists("temp_rp.jpg"): # Rename & delete
-        os.remove("temp_rp")
-    else: return "Failed"
+    if not os.path.exists("temp_rp.jpg"):
+        return "Failed"
 
-# //////////////////////////////////////////////////////////
-# //////////////////////////////////////////////////////////
-# Step3 Lấy byte width, trong file temp_rp.jpg.......OK
+    os.remove("temp_rp")
+
+
+# Step3. Lấy byte width trong temp_rp.jpg
 def s3_get_byte_w():
-    with open('temp_rp.jpg', 'rb') as f: # File Tốt
-        data_good = f.read()
-
-    for marker in (b"\xFF\xC0", b"\xFF\xC2"):
-        pos = data_good.find(marker)
-        if pos != -1: # Byte Width
-            os.remove("temp_rp.jpg")
-            return data_good[pos + 7:pos + 9]
-
+    with open("temp_rp.jpg", "rb") as f:
+        d = f.read()
     os.remove("temp_rp.jpg")
 
-# //////////////////////////////////////////////////////////
-# //////////////////////////////////////////////////////////
-def s4_0_proce_header(file_inp, byte_h, byte_w, try_byte2x, skip_bytes):
-    # 1. Tạo header trước đã
-    data_header = s4_1_created_header(byte_h.hex(), byte_w.hex(), try_byte2x)
-    # ////////////////////////////////////
-    # Đọc file mã hoá bỏ qua skip_bytes
-    with open(file_inp, 'rb') as f1:
-        body = f1.read()[skip_bytes:]
-
-    # Lưu Header đã tạo + phần skip_bytes file_inp
-    image_bytes = data_header + body 
-    with open("CHECK_.JPG", "wb") as w:
-        w.write(image_bytes)
-
-    return image_bytes
-
-# //////////////////////////////////////////////////////////
-# //////////////////////////////////////////////////////////
-def auto_shift_mcu(image_bytes, count_mcu_shift):
-    with open("Shift_.JPG", "wb") as w:
-        w.write(image_bytes)
+    for m in (b"\xFF\xC0", b"\xFF\xC2"):
+        if (p := d.find(m)) != -1:
+            return d[p + 7:p + 9]
 
 
-    startupinfo = subprocess.STARTUPINFO()
-    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-    pr0c = subprocess.Popen(['./Tool/JpegRepair.exe', 'Shift_.JPG', 'Shift_OK.JPG', 'insert', f'{count_mcu_shift}'], startupinfo=startupinfo)
-    pr0c.communicate(); print('heloooooooooooooooooooooooooooooooooooooooooo')
-
-    time.sleep(1)
-    with open("Shift_ok.JPG", "rb") as r:
-        data_out = r.read()
-
-    os.remove("Shift_.JPG"); os.remove("Shift_ok.JPG")
-    return data_out
-
-
-
-def s4_replace_header(file_inp, byte_w, skip_bytes, out_dir):
-
-    byte2x = ["21", "22", "11", "41"]
-    image_bytes = None
-    for try_byte2x in byte2x:
-        # ////////////////////////////////////
-        byte_h = (320).to_bytes(2, 'big')
-        s4_0_proce_header(file_inp, byte_h, byte_w, try_byte2x, skip_bytes)
-        height_real, mcu_size_x, count_mcu_shift, ketqua = s4_2_decomp_jpeg(try_byte2x)
-
-        # Nếu kết quả decode được thì thoát
-        if ketqua != "Failed":
-            byte_h = (height_real).to_bytes(2, 'big')
-            image_bytes = s4_0_proce_header(file_inp, byte_h, byte_w, try_byte2x, skip_bytes)
-            image_bytes = auto_shift_mcu(image_bytes, count_mcu_shift)
-            
+# Đã có width, giờ tìm height và 21 22 41 11
+# ref: bytes thumbnail hoặc None, truyền xuống s4_created_header
+def s4_replace_header(file_inp, byte_width, skip_bytes, out_dir, ref=None):
+    data_fix = None
+    for thu_2byte in ("21", "22", "11", "41"):
+        byte_height = (320).to_bytes(2, "big")  # height mặc định 320
+        data_fix, ketqua = s4_created_header(file_inp, byte_height, byte_width, thu_2byte, skip_bytes, ref)
+        if ketqua == "OK":
             break
 
-        else: continue
-
-    os.remove("CHECK_.JPG")
-
-    # ////////////////////////////////////
     name = os.path.basename(file_inp)
     pos = name.upper().find(".JPG")
     file_out = name[:pos] if pos != -1 else name
 
-    os.makedirs(out_dir, exist_ok=True) # Lưu ra folder Repaired
-    if image_bytes:
-        with open(os.path.join(out_dir, f"{file_out}_R.JPG"), "wb") as w:
-            w.write(image_bytes)
+    os.makedirs(out_dir, exist_ok=True)
+    if data_fix:
+        path = os.path.join(out_dir, f"{file_out}_R.JPG")
+        with open(path, "wb") as w:
+            w.write(data_fix)
+        return path
 
-            return os.path.join(out_dir, f"{file_out}_R.JPG") # trả về đường dẫn file đã lưu
-
-    print("Fail can't write image_bytes (Code 168)")
+    print("Fail can't write data_fix (Code 111)")
     return None
 
 
-# //////////////////////////////////////////////////////////
-def s4_1_created_header(byte_h, byte_w, byte2x):
+def s4_created_header(file_inp, byte_height, byte_width, thu_2byte, skip_bytes, ref=None):
     text_byte = "FFD8FFDB008400010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101FFC0001108FFFFFFFF0301DD00021101031101FFC401A20000010501010101010100000000000000000102030405060708090A0B100002010303020403050504040000017D01020300041105122131410613516107227114328191A1082342B1C11552D1F02433627282090A161718191A25262728292A3435363738393A434445464748494A535455565758595A636465666768696A737475767778797A838485868788898A92939495969798999AA2A3A4A5A6A7A8A9AAB2B3B4B5B6B7B8B9BAC2C3C4C5C6C7C8C9CAD2D3D4D5D6D7D8D9DAE1E2E3E4E5E6E7E8E9EAF1F2F3F4F5F6F7F8F9FA0100030101010101010101010000000000000102030405060708090A0B1100020102040403040705040400010277000102031104052131061241510761711322328108144291A1B1C109233352F0156272D10A162434E125F11718191A262728292A35363738393A434445464748494A535455565758595A636465666768696A737475767778797A82838485868788898A92939495969798999AA2A3A4A5A6A7A8A9AAB2B3B4B5B6B7B8B9BAC2C3C4C5C6C7C8C9CAD2D3D4D5D6D7D8D9DAE2E3E4E5E6E7E8E9EAF2F3F4F5F6F7F8F9FAFFDA000C03010002110311003F00"
 
-    text_byte = text_byte.replace("FFFFFFFF", byte_h + byte_w)
-    text_byte = text_byte.replace("DD", byte2x) # Kênh 
+    def header(h):
+        return bytes.fromhex(text_byte.replace("FFFFFFFF", (h + byte_width).hex()).replace("DD", thu_2byte))
 
-    data_out = bytes.fromhex(text_byte)
-    return data_out
+    with open(file_inp, "rb") as f:
+        body = f.read()[skip_bytes:]
 
+    # with open("File_test.jpg", "wb") as w:
+    #     w.write(header(byte_height) + body)
 
-def s4_2_decomp_jpeg(try_byte2x):
-    startupinfo = subprocess.STARTUPINFO()
-    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-    pr0c = subprocess.Popen(
-        ['./Tool/JpegDecomp.exe', '-decode', '-fin', 'CHECK_.JPG', '-fout', "Log_MCUs.txt"],
-        startupinfo=startupinfo,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-        text=True,          # trả về string
-        encoding="utf-8",   # tránh lỗi font
-        errors="ignore"
-    )
+    height_real, ketqua = s5_decomp_jpeg(header(byte_height) + body, thu_2byte)
+    if ketqua == "Failed":
+        return None, "NO"
 
-    output, _ = pr0c.communicate()   # <-- lấy dữ liệu ở đây
-    # ///////////////////////////////////////////////////////// MAKUP cho đẹp
-    val_mcu = re.search(r"\[(\d+)x(\d+)", output); val_size = re.search(r"\((\d+)x(\d+)\s*pixel\)", output)
-    if val_mcu and val_size:
-        mcu_w, mcu_h = int(val_mcu.group(1)), int(val_mcu.group(2))
-        mcu_size_x, mcu_size_y = int(val_size.group(1)), int(val_size.group(2))
-        # print(mcu_w)
+    # Header với height thật (+20 bù MCU cuối dở dang), rồi sync byte + shift MCU
+    image_bytes = header((height_real + 20).to_bytes(2, "big")) + body
+    data_fix, _ = jpgfix2.fix(image_bytes, ref=ref, off=None, win=256, skip=0)
+
+    # Thêm bản quyền
+    return bytes.fromhex(copyright_) + data_fix[2:], "OK"
 
 
-    print(f"\n[DECODE - {try_byte2x}]")
-    lines = output.splitlines()
+# Decode in-process bằng MCUDecode --adv (decode tới FFD9, bỏ qua tổng MCU trong header)
+def s5_decomp_jpeg(data, thu_2byte):
+    print(f"\n[DECODE - {thu_2byte}]")
+    try:
+        MCUDecode.parse_jpeg(data, 0, len(data), "Log_MCUs.txt", False, True)
+    except MCUDecode.JpegError as e:
+        print(f" └─ {e}")
+        return None, "Failed"
 
-    for i, line in enumerate(lines):
-        prefix = " └─ " if i == len(lines) - 1 else " ├─ "
-        print(prefix + line)
+    with open("Log_MCUs.txt", encoding="utf-8", errors="ignore") as f:
+        txt = f.read()
+
+    head = txt.split("\n\n", 1)[0].splitlines()
+    for i, l in enumerate(head):
+        print((" └─ " if i == len(head) - 1 else " ├─ ") + l)
+
+    size = re.search(r"\((\d+)x(\d+)\s*pixel\)", txt)
+    lines = txt.split("\n", 5000)[:5000]
+    if not size or sum("Huffman error" in l for l in lines) > 3:
+        return None, "Failed"
+
+    i = txt.rfind("\nMCU ")  # MCU cuối cùng đã decode
+    m = MCU_XY.search(txt, i) if i >= 0 else None
+    if not m:
+        return None, "Failed"
+
+    height_real = int(size.group(2)) * int(m.group(2))
+    print(f"Height: {size.group(2)}x{m.group(2)} = {height_real}")
+    return height_real, "SUCCESS"
 
 
+# Trả về đường dẫn file thumbnail (dùng làm ref), None nếu không có
+def check_thumbnail(p, out_dir):
+    d = open(p, 'rb').read()[9:]
+    m = re.search(b'\xff\xdb\x00[\x84\x43]', d)
+    if not m: return None
+    os.makedirs(out_dir, exist_ok=True)
+    base = os.path.basename(p).split('.')[0]
+    thumb_path = os.path.join(out_dir, base + ' (thumbnail).JPG')
+    open(thumb_path, 'wb').write(bytes.fromhex(copyright_) + d[m.start():])
+    open(f"{base}_v2.JPG", "wb").write(d[:m.start()])
+    print('Offset thumbnail:', m.start())
 
-    if os.path.exists("Log_MCUs.txt"):
-        count_error = 0
-        with open("Log_MCUs.txt", "r", encoding="utf-8", errors="ignore") as f:
-            for i, line in enumerate(f):
-                if i >= 5000:
-                    break
-                count_error += line.count("Huffman error")
-
-        # print("Số chữ 'Huffman':", count_error)
-        height_real = None
-        if count_error <= 3:
-
-            pos_mcu_w, pos_mcu_h = get_last_mcu_xy()
-            height_real = mcu_size_y * pos_mcu_h # Kích thước ảnh height
-            count_mcu_shift = mcu_w - pos_mcu_w # Số mcu để shift
-
-            print(f"Height: {mcu_size_y}x{pos_mcu_h} = {height_real}")
-            print(f"MCUs Shift: {mcu_w}-{pos_mcu_w} = {count_mcu_shift}")
-
-            return height_real, mcu_size_x, count_mcu_shift, "SUCCESS"
-        else:
-            return height_real, None, None, "Failed"
-
-# //////////////////////////////////////////////////////////
-# //////////////////////////////////////////////////////////
-# Lấy MCUs cuối cùng, ví dụ (303, 440) thì 440 * 8 = 3520 height
-# 303 là MCU cuối cùng tốt, tổng mcu - 303 này = số mcu shift ?
-# MCU x là: mcu tốt cuối cùng, lấy hiệu mcu ở đầu file Log_MCUs
-# Là [342x48] => thì 303 - 342 = số mcu shift
-def get_last_mcu_xy():
-    with open("Log_MCUs.txt", "rb") as f:
-        f.seek(0, 2)  # nhảy tới cuối file
-        pos = f.tell()
-
-        line = b""
-
-        while pos > 0:
-            pos -= 1
-            f.seek(pos)
-            char = f.read(1)
-
-            if char == b"\n":
-                if b"/// MCU" in line:
-                    line = line.decode("utf-8").strip()
-                    m = re.search(r"\((\d+),(\d+)\)", line)
-                    if m:
-                        pos_mcu_w = mcu_x = int(m.group(1))
-                        pos_mcu_h = mcu_y = int(m.group(2))
-
-                        return pos_mcu_w, pos_mcu_h
-                line = b""
-            else:
-                line = char + line
-
-        # dòng đầu tiên (nếu file chỉ có 1 dòng)
-        if b"/// MCU" in line:
-            line = line.decode("utf-8").strip()
-            m = re.search(r"\((\d+),(\d+)\)", line)
-            if m:
-                pos_mcu_w = mcu_x = int(m.group(1))
-                pos_mcu_h = mcu_y = int(m.group(2))
-
-                return pos_mcu_w, pos_mcu_h
-            # MCU x là: mcu tốt cuối cùng, lấy hiệu mcu ở đầu file Log_MCUs
-            # Là [342x48] => thì 303 - 342 = số mcu shift
-        # print(pos_mcu_w, pos_mcu_h)
-    return None
-
+    return thumb_path
 
 
 def auto_color(path):
     img = Image.open(path)
-    exif = img.info.get('exif')                        # giữ EXIF (ngày chụp, hướng ảnh...)
+    exif = img.info.get('exif')                        # giữ EXIF
     a = np.asarray(img.convert('RGB')).astype(np.float32)
 
     lo, hi = np.percentile(a, (1, 99), axis=(0, 1))    # kéo giãn từng kênh
@@ -305,33 +177,11 @@ def auto_color(path):
     m = a.mean(axis=(0, 1))                            # gray-world
     a = np.clip(a * (m.mean() / m), 0, 255)
 
-    kw = {'quality': 95}
+    kw = {'quality': 99}
     if exif: kw['exif'] = exif
-    Image.fromarray(a.astype(np.uint8)).save(path, format='JPEG',**kw)
+    Image.fromarray(a.astype(np.uint8)).save(path, format='JPEG', **kw)
 
 
-
-
-def check_thumbnail(p, out_dir, skip):
-    d=open(p,'rb').read()
-    m=re.compile(b'\xff\xd8\xff[\xe0\xe1]').search(d, skip)
-    if m:
-        os.makedirs(out_dir,exist_ok=True)
-        open(os.path.join(out_dir, os.path.basename(p).split('.')[0]+' (thumbnail).JPG'),'wb').write(d[m.start():]);print('Offset thumbnail:',m.start())
-
-
-
-
-        with open(f"{os.path.basename(p).split('.')[0]}_v2.JPG", "wb") as w:
-            w.write(d[:m.start()])
-        # Ghi offset truoc thumbnail
-
-        return 'Y'
-
-
-
-# ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-# ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 def _one(file_inp, out_dir, auto_color_, skip):
     print(dedent(f"""
         [SETTING]
@@ -344,20 +194,23 @@ def _one(file_inp, out_dir, auto_color_, skip):
         └─ 0xFFDA SOS  - ???
     """).strip())
 
-    out_path = tmp = None
+    out_path = tmp = ref = None
     try:
-        if check_thumbnail(file_inp, out_dir, skip) == "Y":
+        ref = check_thumbnail(file_inp, out_dir)
+        if ref:
             file_inp = tmp = f"{os.path.basename(file_inp).split('.')[0]}_v2.JPG"
 
         if s1_cut_size(file_inp, skip) != "Failed" and s2_recover_jpeg() != "Failed":
-            out_path = s4_replace_header(file_inp, s3_get_byte_w(), skip, out_dir)
+            out_path = s4_replace_header(file_inp, s3_get_byte_w(), skip, out_dir, ref)
             if out_path and auto_color_.upper() == 'Y':
                 auto_color(out_path)
+
     finally:
         if tmp and os.path.exists(tmp): os.remove(tmp)
     return out_path
 
 
+# folder input, output, extension, auto color, byte skip
 def run(folder_path, out_dir=None, ext="jpg", auto_color_="N", byte_enc=153605, cb=lambda *a: None, st=lambda *a: None):
     out_dir = out_dir or os.path.join(folder_path, "Repaired")
     ext = ext.lower().lstrip(".")
