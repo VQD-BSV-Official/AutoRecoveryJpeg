@@ -1,4 +1,4 @@
-import subprocess, os, time, re, numpy as np
+import subprocess, os, re, numpy as np
 from PIL import Image
 from textwrap import dedent
 from controllers import jpgfix2, MCUDecode
@@ -6,6 +6,7 @@ from controllers import jpgfix2, MCUDecode
 copyright_ = "FFD8FFE1007C45786966000049492A000800000003000E010200270000003200000012010300010000000100000031010200190000005A000000000000005265706169726564206279205675205175616E6720446169200000000000000000000009000000004175746F5265636F766572794A7065672000000000000000000000000000"
 
 MCU_XY = re.compile(r"\((\d+),(\d+)\)")
+SIZE_WH = re.compile(r"(\d+)x(\d+)")
 
 
 # Step1. Cắt `chunk` byte sau skip_bytes ra temp_rp
@@ -26,50 +27,26 @@ def s1_cut_size(file_inp, skip_bytes, chunk=524288):
     return None if n else "Failed"
 
 
-# Step2. JpegRecovery xử lý để ra ảnh - lấy width
-def s2_recover_jpeg():
+# Step2. JpegSize in "WxH" -> lấy W, trả 2 byte big-endian (None nếu lỗi)
+def s2_get_width():
     si = subprocess.STARTUPINFO()
     si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
     si.wShowWindow = subprocess.SW_HIDE
 
     out = subprocess.run(
-        ["./Tool/JpegRecovery.exe", "temp_rp"],
+        ["./Tool/JpegSize.exe", "temp_rp"],
         startupinfo=si, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
         text=True, encoding="utf-8", errors="ignore"
     ).stdout
-
-    lines = out.splitlines()
-    data = {k.strip(): v.strip() for l in lines if ":" in l for k, v in [l.split(":", 1)]}
-    blocks = next((l for l in lines if ";" in l), None)
-
-    num = lambda k, fmt: format(int(data[k]), fmt) if data.get(k, "").isdigit() else "Unknown"
-    frag = data.get("Fragment Saved", "Unknown")
-
-    print(dedent(f"""
-        [RECOVER]
-         ├─ MCUs    : {num("MCU", "")}
-         ├─ Block   : {blocks.replace(";", ",") if blocks else "Unknown"}
-         ├─ Tail    : {num("Tail", ",")}
-         ├─ Fragment: {frag}
-         └─ Status  : {"SUCCESS" if frag != "Unknown" else "FAILED"}
-    """).strip())
-
-    time.sleep(0.25)
-    if not os.path.exists("temp_rp.jpg"):
-        return "Failed"
-
     os.remove("temp_rp")
 
-
-# Step3. Lấy byte width trong temp_rp.jpg
-def s3_get_byte_w():
-    with open("temp_rp.jpg", "rb") as f:
-        d = f.read()
-    os.remove("temp_rp.jpg")
-
-    for m in (b"\xFF\xC0", b"\xFF\xC2"):
-        if (p := d.find(m)) != -1:
-            return d[p + 7:p + 9]
+    m = SIZE_WH.search(out)
+    w = int(m[1]) if m else 0
+    print(dedent(f"""
+        [SIZE]
+         └─ Width: {w or "Unknown"}
+    """).strip())
+    return w.to_bytes(2, "big") if 0 < w < 65536 else None
 
 
 # Đã có width, giờ tìm height và 21 22 41 11
@@ -106,10 +83,18 @@ def s4_created_header(file_inp, byte_height, byte_width, thu_2byte, skip_bytes, 
     with open(file_inp, "rb") as f:
         body = f.read()[skip_bytes:]
 
-    # with open("File_test.jpg", "wb") as w:
+
+    # with open("file_check.jpg", "wb") as w:
     #     w.write(header(byte_height) + body)
 
+
+
     height_real, ketqua = s5_decomp_jpeg(header(byte_height) + body, thu_2byte)
+
+
+
+
+
     if ketqua == "Failed":
         return None, "NO"
 
@@ -121,7 +106,9 @@ def s4_created_header(file_inp, byte_height, byte_width, thu_2byte, skip_bytes, 
     return bytes.fromhex(copyright_) + data_fix[2:], "OK"
 
 
-# Decode in-process bằng MCUDecode --adv (decode tới FFD9, bỏ qua tổng MCU trong header)
+
+
+
 def s5_decomp_jpeg(data, thu_2byte):
     print(f"\n[DECODE - {thu_2byte}]")
     try:
@@ -130,26 +117,77 @@ def s5_decomp_jpeg(data, thu_2byte):
         print(f" └─ {e}")
         return None, "Failed"
 
-    with open("Log_MCUs.txt", encoding="utf-8", errors="ignore") as f:
-        txt = f.read()
+    MCU_PX = re.compile(r"MCU:.*?\((\d+)x(\d+)\s*pixel\)")
 
-    head = txt.split("\n\n", 1)[0].splitlines()
-    for i, l in enumerate(head):
-        print((" └─ " if i == len(head) - 1 else " ├─ ") + l)
+    def get_mcu_size():
+        with open("Log_MCUs.txt", encoding="utf-8", errors="ignore") as f:
+            m = MCU_PX.search(f.read(1024))
+        return (int(m[1]), int(m[2])) if m else None
 
-    size = re.search(r"\((\d+)x(\d+)\s*pixel\)", txt)
-    lines = txt.split("\n", 5000)[:5000]
-    if not size or sum("Huffman error" in l for l in lines) > 3:
+
+    size, last = get_mcu_size(), get_last_mcu_xy()
+    if not size or not last:
         return None, "Failed"
+    (mcu_size_x, mcu_size_y), (_, pos_mcu_h) = size, last
+    height_real = mcu_size_y * pos_mcu_h
 
-    i = txt.rfind("\nMCU ")  # MCU cuối cùng đã decode
-    m = MCU_XY.search(txt, i) if i >= 0 else None
-    if not m:
-        return None, "Failed"
 
-    height_real = int(size.group(2)) * int(m.group(2))
-    print(f"Height: {size.group(2)}x{m.group(2)} = {height_real}")
+
+    print(f"Height: {mcu_size_y}x{pos_mcu_h} = {height_real}")
     return height_real, "SUCCESS"
+
+
+
+
+
+
+# Lấy MCUs cuối cùng, ví dụ (303, 440) thì 440 * 8 = 3520 height
+# 303 là MCU cuối cùng tốt, tổng mcu - 303 này = số mcu shift ?
+# MCU x là: mcu tốt cuối cùng, lấy hiệu mcu ở đầu file Log_MCUs
+# Là [342x48] => thì 303 - 342 = số mcu shift
+def get_last_mcu_xy():
+    with open("Log_MCUs.txt", "rb") as f:
+        f.seek(0, 2)  # nhảy tới cuối file
+        pos = f.tell()
+ 
+        line = b""
+ 
+        while pos > 0:
+            pos -= 1
+            f.seek(pos)
+            char = f.read(1)
+ 
+            if char == b"\n":
+                if b"MCU" in line:
+                    line = line.decode("utf-8").strip()
+                    m = re.search(r"\((\d+),(\d+)\)", line)
+                    if m:
+                        pos_mcu_w = mcu_x = int(m.group(1))
+                        pos_mcu_h = mcu_y = int(m.group(2))
+ 
+                        return pos_mcu_w, pos_mcu_h
+                line = b""
+            else:
+                line = char + line
+ 
+        # dòng đầu tiên (nếu file chỉ có 1 dòng)
+        if b"MCU" in line:
+            line = line.decode("utf-8").strip()
+            m = re.search(r"\((\d+),(\d+)\)", line)
+            if m:
+                pos_mcu_w = mcu_x = int(m.group(1))
+                pos_mcu_h = mcu_y = int(m.group(2))
+ 
+                return pos_mcu_w, pos_mcu_h
+            # MCU x là: mcu tốt cuối cùng, lấy hiệu mcu ở đầu file Log_MCUs
+            # Là [342x48] => thì 303 - 342 = số mcu shift
+        # print(pos_mcu_w, pos_mcu_h)
+    return None
+
+
+
+
+
 
 
 # Trả về đường dẫn file thumbnail (dùng làm ref), None nếu không có
@@ -200,8 +238,8 @@ def _one(file_inp, out_dir, auto_color_, skip):
         if ref:
             file_inp = tmp = f"{os.path.basename(file_inp).split('.')[0]}_v2.JPG"
 
-        if s1_cut_size(file_inp, skip) != "Failed" and s2_recover_jpeg() != "Failed":
-            out_path = s4_replace_header(file_inp, s3_get_byte_w(), skip, out_dir, ref)
+        if s1_cut_size(file_inp, skip) != "Failed" and (w := s2_get_width()):
+            out_path = s4_replace_header(file_inp, w, skip, out_dir, ref)
             if out_path and auto_color_.upper() == 'Y':
                 auto_color(out_path)
 
