@@ -9,6 +9,7 @@ MCU_XY = re.compile(r"\((\d+),(\d+)\)")
 SIZE_WH = re.compile(r"(\d+)x(\d+)")
 
 
+# //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 # Step1. Cắt `chunk` byte sau skip_bytes ra temp_rp
 def s1_cut_size(file_inp, skip_bytes, chunk=524288):
     size = os.path.getsize(file_inp)
@@ -26,7 +27,7 @@ def s1_cut_size(file_inp, skip_bytes, chunk=524288):
     """).strip())
     return None if n else "Failed"
 
-
+# //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 # Step2. JpegSize in "WxH" -> lấy W, trả 2 byte big-endian (None nếu lỗi)
 def s2_get_width():
     si = subprocess.STARTUPINFO()
@@ -49,6 +50,8 @@ def s2_get_width():
     return w.to_bytes(2, "big") if 0 < w < 65536 else None
 
 
+# //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+# //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 # Đã có width, giờ tìm height và 21 22 41 11
 # ref: bytes thumbnail hoặc None, truyền xuống s4_created_header
 def s4_replace_header(file_inp, byte_width, skip_bytes, out_dir, ref=None):
@@ -74,6 +77,9 @@ def s4_replace_header(file_inp, byte_width, skip_bytes, out_dir, ref=None):
     return None
 
 
+
+# //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+# //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 def s4_created_header(file_inp, byte_height, byte_width, thu_2byte, skip_bytes, ref=None):
     text_byte = "FFD8FFDB008400010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101FFC0001108FFFFFFFF0301DD00021101031101FFC401A20000010501010101010100000000000000000102030405060708090A0B100002010303020403050504040000017D01020300041105122131410613516107227114328191A1082342B1C11552D1F02433627282090A161718191A25262728292A3435363738393A434445464748494A535455565758595A636465666768696A737475767778797A838485868788898A92939495969798999AA2A3A4A5A6A7A8A9AAB2B3B4B5B6B7B8B9BAC2C3C4C5C6C7C8C9CAD2D3D4D5D6D7D8D9DAE1E2E3E4E5E6E7E8E9EAF1F2F3F4F5F6F7F8F9FA0100030101010101010101010000000000000102030405060708090A0B1100020102040403040705040400010277000102031104052131061241510761711322328108144291A1B1C109233352F0156272D10A162434E125F11718191A262728292A35363738393A434445464748494A535455565758595A636465666768696A737475767778797A82838485868788898A92939495969798999AA2A3A4A5A6A7A8A9AAB2B3B4B5B6B7B8B9BAC2C3C4C5C6C7C8C9CAD2D3D4D5D6D7D8D9DAE2E3E4E5E6E7E8E9EAF2F3F4F5F6F7F8F9FAFFDA000C03010002110311003F00"
 
@@ -84,19 +90,10 @@ def s4_created_header(file_inp, byte_height, byte_width, thu_2byte, skip_bytes, 
         body = f.read()[skip_bytes:]
 
 
-    # with open("file_check.jpg", "wb") as w:
-    #     w.write(header(byte_height) + body)
-
-
-
     height_real, ketqua = s5_decomp_jpeg(header(byte_height) + body, thu_2byte)
-
-
-
-
-
     if ketqua == "Failed":
         return None, "NO"
+
 
     # Header với height thật (+20 bù MCU cuối dở dang), rồi sync byte + shift MCU
     image_bytes = header((height_real + 20).to_bytes(2, "big")) + body
@@ -108,7 +105,7 @@ def s4_created_header(file_inp, byte_height, byte_width, thu_2byte, skip_bytes, 
 
 
 
-
+# //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 def s5_decomp_jpeg(data, thu_2byte):
     print(f"\n[DECODE - {thu_2byte}]")
     try:
@@ -117,12 +114,6 @@ def s5_decomp_jpeg(data, thu_2byte):
         print(f" └─ {e}")
         return None, "Failed"
 
-    MCU_PX = re.compile(r"MCU:.*?\((\d+)x(\d+)\s*pixel\)")
-
-    def get_mcu_size():
-        with open("Log_MCUs.txt", encoding="utf-8", errors="ignore") as f:
-            m = MCU_PX.search(f.read(1024))
-        return (int(m[1]), int(m[2])) if m else None
 
 
     size, last = get_mcu_size(), get_last_mcu_xy()
@@ -139,57 +130,30 @@ def s5_decomp_jpeg(data, thu_2byte):
 
 
 
-
-
+# //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+# //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 # Lấy MCUs cuối cùng, ví dụ (303, 440) thì 440 * 8 = 3520 height
-# 303 là MCU cuối cùng tốt, tổng mcu - 303 này = số mcu shift ?
-# MCU x là: mcu tốt cuối cùng, lấy hiệu mcu ở đầu file Log_MCUs
-# Là [342x48] => thì 303 - 342 = số mcu shift
+def get_mcu_size():
+    MCU_PX = re.compile(r"MCU:.*?\((\d+)x(\d+)\s*pixel\)")
+
+    with open("Log_MCUs.txt", encoding="utf-8", errors="ignore") as f:
+        m = MCU_PX.search(f.read(1024))
+    return (int(m[1]), int(m[2])) if m else None
+
+
 def get_last_mcu_xy():
     with open("Log_MCUs.txt", "rb") as f:
-        f.seek(0, 2)  # nhảy tới cuối file
-        pos = f.tell()
- 
-        line = b""
- 
-        while pos > 0:
-            pos -= 1
-            f.seek(pos)
-            char = f.read(1)
- 
-            if char == b"\n":
-                if b"MCU" in line:
-                    line = line.decode("utf-8").strip()
-                    m = re.search(r"\((\d+),(\d+)\)", line)
-                    if m:
-                        pos_mcu_w = mcu_x = int(m.group(1))
-                        pos_mcu_h = mcu_y = int(m.group(2))
- 
-                        return pos_mcu_w, pos_mcu_h
-                line = b""
-            else:
-                line = char + line
- 
-        # dòng đầu tiên (nếu file chỉ có 1 dòng)
-        if b"MCU" in line:
-            line = line.decode("utf-8").strip()
-            m = re.search(r"\((\d+),(\d+)\)", line)
-            if m:
-                pos_mcu_w = mcu_x = int(m.group(1))
-                pos_mcu_h = mcu_y = int(m.group(2))
- 
-                return pos_mcu_w, pos_mcu_h
-            # MCU x là: mcu tốt cuối cùng, lấy hiệu mcu ở đầu file Log_MCUs
-            # Là [342x48] => thì 303 - 342 = số mcu shift
-        # print(pos_mcu_w, pos_mcu_h)
-    return None
+        f.seek(0, 2); f.seek(max(0, f.tell() - 4096))
+        tail = f.read().decode("utf-8", "ignore")
+    ms = MCU_XY.findall(tail)
+    return (int(ms[-1][0]), int(ms[-1][1])) if ms else None
 
 
 
 
 
 
-
+# //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 # Trả về đường dẫn file thumbnail (dùng làm ref), None nếu không có
 def check_thumbnail(p, out_dir):
     d = open(p, 'rb').read()[9:]
@@ -220,6 +184,9 @@ def auto_color(path):
     Image.fromarray(a.astype(np.uint8)).save(path, format='JPEG', **kw)
 
 
+
+# //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+# //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 def _one(file_inp, out_dir, auto_color_, skip):
     print(dedent(f"""
         [SETTING]
@@ -248,6 +215,7 @@ def _one(file_inp, out_dir, auto_color_, skip):
     return out_path
 
 
+
 # folder input, output, extension, auto color, byte skip
 def run(folder_path, out_dir=None, ext="jpg", auto_color_="N", byte_enc=153605, cb=lambda *a: None, st=lambda *a: None):
     out_dir = out_dir or os.path.join(folder_path, "Repaired")
@@ -261,6 +229,10 @@ def run(folder_path, out_dir=None, ext="jpg", auto_color_="N", byte_enc=153605, 
             out = None; print(f"ERR {name}: {e}")
         print("====================DONE====================")
         cb(i, len(files), name, out)
+
+
+
+
 
 
 if __name__ == "__main__":
