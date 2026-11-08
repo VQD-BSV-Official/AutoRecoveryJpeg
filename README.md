@@ -1,10 +1,22 @@
 ## ***Developed by Vũ Quang Đại / <QDai.Dev08@gmail.com>***
-> [!Important]
-> Please respect copyright, I created this software without any cost or support. ***DO NOT STEAL THE CODE AND MAKE IT YOURS, WHILE EVERYTHING IS BUILT BY ME***. For example: edit ***Author & Developed by: Vu Quang Dai*** to your name, I know open source you can edit everything, but I want respect for the effort I put in. **You can run the code directly using Python to update to the latest versions instead of waiting for the .exe release. Install any missing libraries, and if you encounter errors, please fix them and contribute your suggestions.** I coded 99% by hand, and the remaining 1% was done using AI to simplify the code. It took many mistakes to get the code right, and I spent hours at the computer. I didn't use AI for coding, so I cherish everything I've done. Therefore, you can donate to me.
-> * ```You can contact me via gmail (email) to save the files you need. This will cost you a fee, thank you. If you have any problems or questions, I will reply as soon as possible. I will probably develop to version 2.0.0 and then stop. Lack of funding is getting me down and research is time consuming.```
-> * <img src="https://github.com/user-attachments/assets/e44b917f-01d5-4df4-af07-17703e9b553f" alt="BIDV" width="200" style="max-width: 100%; margin: 0 auto;"> <br>
-> * **Donate (Paypal)**: [Do consider donating or buying us a coffee](https://www.paypal.com/paypalme/QDaiDev08)
+ > [!IMPORTANT]
+> This software was built by me, at no cost and without outside support. Please respect the effort behind it.
+> **Do not copy the code and pass it off as your own**, e.g. by replacing **Author & Developed by: Vu Quang Dai** with your name. It is open source and you may modify it, but credit is required.
 
+- ✍️ ~99% hand-written; the remaining ~1% used AI only to simplify the code
+- ⏱️ Many mistakes and countless hours went into getting it right
+- 🎯 Planned to continue up to **v2.0.0**, then stop (limited funding, research is time-consuming)
+
+***If this project helps you, consider donating:***
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/e44b917f-01d5-4df4-af07-17703e9b553f" alt="BIDV QR" width="200">
+  <img src="https://github.com/user-attachments/assets/4dbc8764-1209-4233-87db-5cf78c9e8cf7" alt="PayPal Image" width="230"/> <br><br>
+
+  <a href="https://www.paypal.com/paypalme/QDaiDev08">
+    <img src="https://img.shields.io/badge/Donate-PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white" alt="PayPal">
+  </a>
+</p>
 
 [![Python](https://img.shields.io/badge/Python-3.x-blue?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![PyQt6](https://img.shields.io/badge/GUI-PyQt6-538CC9?style=for-the-badge&logo=qt&logoColor=white)](https://www.riverbankcomputing.com/software/pyqt/intro)
