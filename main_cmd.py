@@ -1,7 +1,6 @@
 import subprocess, os, re, numpy as np
 from PIL import Image
 from textwrap import dedent
-from controllers import jpgfix2, MCUDecode
 
 copyright_ = "FFD8FFE1007C45786966000049492A000800000003000E010200270000003200000012010300010000000100000031010200190000005A000000000000005265706169726564206279205675205175616E6720446169200000000000000000000009000000004175746F5265636F766572794A7065672000000000000000000000000000"
 
@@ -30,15 +29,7 @@ def s1_cut_size(file_inp, skip_bytes, chunk=524288):
 # //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 # Step2. JpegSize in "WxH" -> lấy W, trả 2 byte big-endian (None nếu lỗi)
 def s2_get_width():
-    si = subprocess.STARTUPINFO()
-    si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-    si.wShowWindow = subprocess.SW_HIDE
-
-    out = subprocess.run(
-        ["./Tool/JpegSize.exe", "temp_rp"],
-        startupinfo=si, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-        text=True, encoding="utf-8", errors="ignore"
-    ).stdout
+    out = _run_hidden(["./tool/jpegsize.exe", "temp_rp"]).stdout
     os.remove("temp_rp")
 
     m = SIZE_WH.search(out)
@@ -53,7 +44,7 @@ def s2_get_width():
 # //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 # //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 # Đã có width, giờ tìm height và 21 22 41 11
-# ref: bytes thumbnail hoặc None, truyền xuống s4_created_header
+# ref: đường dẫn thumbnail hoặc None, truyền xuống s4_created_header
 def s4_replace_header(file_inp, byte_width, skip_bytes, out_dir, ref=None):
     data_fix = None
     for thu_2byte in ("21", "22", "11", "41"):
@@ -96,25 +87,49 @@ def s4_created_header(file_inp, byte_height, byte_width, thu_2byte, skip_bytes, 
 
 
     # Header với height thật (+20 bù MCU cuối dở dang), rồi sync byte + shift MCU
-    image_bytes = header((height_real + 20).to_bytes(2, "big")) + body
-    data_fix, _ = jpgfix2.fix(image_bytes, ref=ref, off=None, win=256, skip=0)
+    data_fix = _fix(header((height_real + 20).to_bytes(2, "big")) + body, ref)
+    if not data_fix:
+        return None, "NO"
 
     # Thêm bản quyền
     return bytes.fromhex(copyright_) + data_fix[2:], "OK"
 
+
+# //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+# Gọi tool/jpgfix2.exe: in out [ref=] [off=dY,dCb,dCr] [win=] [skip=] -> bytes đã fix (None nếu lỗi)
+def _fix(data, ref=None, off=None, win=256, skip=0):
+    args = ["./tool/jpgfix2.exe", "temp_fix_in.jpg", "temp_fix_out.jpg", f"win={win}", f"skip={skip}"]
+    if ref: args.append(f"ref={ref}")
+    if off: args.append(f"off={off}")
+    with open("temp_fix_in.jpg", "wb") as f:
+        f.write(data)
+    try:
+        r = _run_hidden(args)
+        if r.returncode or not os.path.exists("temp_fix_out.jpg"):
+            print(f" └─ fix error: {(r.stdout.strip().splitlines() or ['?'])[-1]}")
+            return None
+        with open("temp_fix_out.jpg", "rb") as f:
+            return f.read()
+    finally:
+        for p in ("temp_fix_in.jpg", "temp_fix_out.jpg"):
+            if os.path.exists(p): os.remove(p)
 
 
 
 # //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 def s5_decomp_jpeg(data, thu_2byte):
     print(f"\n[DECODE - {thu_2byte}]")
+    open("Log_MCUs.txt", "w").close()  # xoá log cũ, tránh đọc nhầm khi exe không ghi
+    with open("temp_dec", "wb") as f:
+        f.write(data)
     try:
-        MCUDecode.parse_jpeg(data, 0, len(data), "Log_MCUs.txt", False, True)
-    except MCUDecode.JpegError as e:
-        print(f" └─ {e}")
+        r = _run_hidden(["./tool/mcudecode.exe", "temp_dec", "Log_MCUs.txt", "--adv"])
+    finally:
+        os.remove("temp_dec")
+
+    if r.returncode:
+        print(f" └─ {(r.stdout.strip().splitlines() or ['decode error'])[-1]}")
         return None, "Failed"
-
-
 
     size, last = get_mcu_size(), get_last_mcu_xy()
     if not size or not last:
@@ -122,9 +137,7 @@ def s5_decomp_jpeg(data, thu_2byte):
     (mcu_size_x, mcu_size_y), (_, pos_mcu_h) = size, last
     height_real = mcu_size_y * pos_mcu_h
 
-
-
-    print(f"Height: {mcu_size_y}x{pos_mcu_h} = {height_real}")
+    print(f" └─ Height: {pos_mcu_h}x{mcu_size_y} = {height_real}")
     return height_real, "SUCCESS"
 
 
@@ -151,6 +164,14 @@ def get_last_mcu_xy():
 
 
 
+def _run_hidden(args):
+    si = subprocess.STARTUPINFO()
+    si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    si.wShowWindow = subprocess.SW_HIDE
+    return subprocess.run(
+        args, startupinfo=si, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+        text=True, encoding="utf-8", errors="ignore"
+    )
 
 
 # //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -192,11 +213,9 @@ def _one(file_inp, out_dir, auto_color_, skip):
         [SETTING]
         ├─ Part size   - {skip} B
         ├─ Get data    - 1MB/2
-        ├─ 0xFFD8 SOI  - ???
         ├─ 0xFFDB DQT  - 100% 
         ├─ 0xFFC0 SOF0 - WidthAuto, HeightAuto
-        ├─ 0xFFC4 DHT  - YAuto, Cb11, Cr11
-        └─ 0xFFDA SOS  - ???
+        └─ 0xFFC4 DHT  - YAuto, Cb11, Cr11
     """).strip())
 
     out_path = tmp = ref = None
