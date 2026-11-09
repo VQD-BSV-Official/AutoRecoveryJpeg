@@ -5,7 +5,7 @@
 
 - ✍️ ~99% hand-written; the remaining ~1% used AI only to simplify the code
 - ⏱️ Many mistakes and countless hours went into getting it right
-- 🎯 Planned to continue up to **v2.0.0**, then stop (limited funding, research is time-consuming)
+- 🎯 I stopped at this version, due to lack of funding and time constraints.
 
 ***If this project helps you, consider donating:***
 
