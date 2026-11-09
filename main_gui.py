@@ -2,16 +2,13 @@ import sys, os
 import main_cmd
 
 
-from PyQt6.QtCore import QThread, pyqtSignal, Qt
-from PyQt6.QtGui import QImage, QPixmap
+from PyQt6.QtCore import QThread, pyqtSignal, Qt, QSize
+from PyQt6.QtGui import QImage, QPixmap, QIcon
 from PyQt6.QtWidgets import (
     QApplication,
     QMainWindow,
     QFileDialog,
-    # QListWidget,
-    # QListWidgetItem,
-    # QListView,
-    # QAbstractItemView,
+    QListWidgetItem,
 )
 
 
@@ -19,20 +16,21 @@ from PyQt6.QtWidgets import (
 # >>> UI 💻 ──────────────────────────────────
 from views.Sreen.GUI import Ui_MainWindow
 
+THUMB = QSize(256, 256)  # khớp iconSize trong .ui; ~256KB RAM/ảnh
 
 
 class Worker(QThread):
     prog = pyqtSignal(int, int, str, str, QImage)
     begin = pyqtSignal(int, int, str)
 
-    def __init__(self, args, size):
+    def __init__(self, args):
         super().__init__()
-        self.args, self.size = args, size
+        self.args = args
 
     def run(self):
         def cb(i, n, name, out):
-            # scale ở thread phụ, GUI chỉ việc setPixmap
-            img = QImage(out).scaled(self.size, Qt.AspectRatioMode.KeepAspectRatio,
+            # scale ở thread phụ, GUI chỉ việc tạo icon
+            img = QImage(out).scaled(THUMB, Qt.AspectRatioMode.KeepAspectRatio,
                                      Qt.TransformationMode.SmoothTransformation) if out else QImage()
             self.prog.emit(i, n, name, out or "", img)
         main_cmd.run(*self.args, cb, self.begin.emit)
@@ -56,8 +54,6 @@ class MainWindow:
         # Setting
         u.le_input.setPlaceholderText("Folder with encrypted file")
         u.le_output.setPlaceholderText("Folder for repaired JPEG file")
-        u.lbl_view.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
 
         # Button
         u.btn_input.clicked.connect(self.open_folder_inp)
@@ -73,11 +69,12 @@ class MainWindow:
         if not os.path.exists(inp_path): return
 
         u.text_log.clear(); u.btn_start.setEnabled(False)
+        u.lst_view.clear()
         u.pb_progress.setRange(0, 0)  # busy cho tới khi biết tổng số file
         # temp file dùng chung cwd => chỉ 1 worker tại 1 thời điểm (nút Start đã khoá)
         self.w = Worker((inp_path, out_path, u.le_ext.text().lower(),
                          "Y" if u.chk_auto_color.isChecked() else "N",
-                         int(u.le_size.text()) if u.le_size.text().isdigit() else 153605), u.lbl_view.size())
+                         int(u.le_size.text()) if u.le_size.text().isdigit() else 153605))
         u.text_log.append("START")
         self.w.begin.connect(self.on_begin)
         self.w.prog.connect(self.on_prog)
@@ -100,7 +97,14 @@ class MainWindow:
         u = self.uic
         u.text_log.append(f"{'OK...' if out else 'NO...'} {name}")
         u.pb_progress.setValue(i)
-        if out: u.lbl_view.setPixmap(QPixmap.fromImage(img))
+        if not out: return
+        lst = u.lst_view
+        sb = lst.horizontalScrollBar()
+        follow = sb.value() == sb.maximum()  # đang ở cuối thì tự bám ảnh mới
+        it = QListWidgetItem(QIcon(QPixmap.fromImage(img)), "")
+        it.setToolTip(name)
+        lst.addItem(it)
+        if follow: lst.scrollToItem(it)
 
 
 
