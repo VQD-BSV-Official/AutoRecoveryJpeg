@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>498</width>
-    <height>573</height>
+    <width>572</width>
+    <height>587</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,9 +18,9 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>10</y>
-      <width>451</width>
-      <height>131</height>
+      <y>0</y>
+      <width>531</width>
+      <height>171</height>
      </rect>
     </property>
     <property name="title">
@@ -30,8 +30,8 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>20</y>
-       <width>341</width>
+       <y>50</y>
+       <width>431</width>
        <height>21</height>
       </rect>
      </property>
@@ -46,8 +46,8 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>50</y>
-       <width>341</width>
+       <y>80</y>
+       <width>431</width>
        <height>21</height>
       </rect>
      </property>
@@ -55,8 +55,8 @@
     <widget class="QPushButton" name="btn_input">
      <property name="geometry">
       <rect>
-       <x>360</x>
-       <y>20</y>
+       <x>450</x>
+       <y>50</y>
        <width>75</width>
        <height>24</height>
       </rect>
@@ -68,8 +68,8 @@
     <widget class="QPushButton" name="btn_output">
      <property name="geometry">
       <rect>
-       <x>360</x>
-       <y>50</y>
+       <x>450</x>
+       <y>80</y>
        <width>75</width>
        <height>24</height>
       </rect>
@@ -82,7 +82,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>100</y>
+       <y>130</y>
        <width>141</width>
        <height>21</height>
       </rect>
@@ -95,7 +95,7 @@
      <property name="geometry">
       <rect>
        <x>160</x>
-       <y>100</y>
+       <y>130</y>
        <width>141</width>
        <height>21</height>
       </rect>
@@ -108,7 +108,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>80</y>
+       <y>110</y>
        <width>291</width>
        <height>16</height>
       </rect>
@@ -117,12 +117,41 @@
       <string>Encrypted extension:            Encrypted part size:</string>
      </property>
     </widget>
+    <widget class="QLineEdit" name="le_input_2">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>20</y>
+       <width>431</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="inputMask">
+      <string/>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btn_input_2">
+     <property name="geometry">
+      <rect>
+       <x>450</x>
+       <y>20</y>
+       <width>75</width>
+       <height>24</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>input</string>
+     </property>
+    </widget>
    </widget>
    <widget class="QPushButton" name="btn_start">
     <property name="geometry">
      <rect>
-      <x>200</x>
-      <y>530</y>
+      <x>260</x>
+      <y>550</y>
       <width>75</width>
       <height>24</height>
      </rect>
@@ -140,9 +169,9 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>140</y>
-      <width>451</width>
-      <height>91</height>
+      <y>170</y>
+      <width>531</width>
+      <height>81</height>
      </rect>
     </property>
     <property name="title">
@@ -151,9 +180,9 @@
     <widget class="QCheckBox" name="chk_auto_color">
      <property name="geometry">
       <rect>
-       <x>10</x>
-       <y>40</y>
-       <width>381</width>
+       <x>350</x>
+       <y>10</y>
+       <width>181</width>
        <height>20</height>
       </rect>
      </property>
@@ -161,43 +190,53 @@
       <string>Auto-adjust colors</string>
      </property>
     </widget>
-    <widget class="QCheckBox" name="chk_auto_detect">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>20</y>
-       <width>391</width>
-       <height>20</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Automatic detection (no sample needed)</string>
-     </property>
-     <property name="checked">
-      <bool>true</bool>
-     </property>
-    </widget>
     <widget class="QCheckBox" name="chk_subfolders">
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>60</y>
-       <width>381</width>
+       <y>40</y>
+       <width>161</width>
        <height>20</height>
       </rect>
      </property>
      <property name="text">
-      <string>Process subfolders</string>
+      <string>Process subfolders (beta)</string>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="chk_auto_color_2">
+     <property name="geometry">
+      <rect>
+       <x>350</x>
+       <y>30</y>
+       <width>181</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Auto-adjust colors (thumb)</string>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="chk_auto_color_3">
+     <property name="geometry">
+      <rect>
+       <x>350</x>
+       <y>50</y>
+       <width>181</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Auto-adjust colors (mcu)</string>
      </property>
     </widget>
    </widget>
    <widget class="QProgressBar" name="pb_progress">
     <property name="geometry">
      <rect>
-      <x>470</x>
-      <y>20</y>
+      <x>550</x>
+      <y>10</y>
       <width>16</width>
-      <height>491</height>
+      <height>521</height>
      </rect>
     </property>
     <property name="layoutDirection">
@@ -216,8 +255,8 @@
    <widget class="QTextBrowser" name="text_log">
     <property name="geometry">
      <rect>
-      <x>250</x>
-      <y>240</y>
+      <x>330</x>
+      <y>260</y>
       <width>211</width>
       <height>271</height>
      </rect>
@@ -237,8 +276,8 @@ li.checked::marker { content: &quot;\2612&quot;; }
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>240</y>
-      <width>231</width>
+      <y>260</y>
+      <width>301</width>
       <height>271</height>
      </rect>
     </property>
