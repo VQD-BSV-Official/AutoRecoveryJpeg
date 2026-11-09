@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>572</width>
-    <height>587</height>
+    <width>704</width>
+    <height>446</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,7 +19,7 @@
      <rect>
       <x>10</x>
       <y>0</y>
-      <width>531</width>
+      <width>441</width>
       <height>171</height>
      </rect>
     </property>
@@ -31,7 +31,7 @@
       <rect>
        <x>10</x>
        <y>50</y>
-       <width>431</width>
+       <width>341</width>
        <height>21</height>
       </rect>
      </property>
@@ -47,7 +47,7 @@
       <rect>
        <x>10</x>
        <y>80</y>
-       <width>431</width>
+       <width>341</width>
        <height>21</height>
       </rect>
      </property>
@@ -55,7 +55,7 @@
     <widget class="QPushButton" name="btn_input">
      <property name="geometry">
       <rect>
-       <x>450</x>
+       <x>360</x>
        <y>50</y>
        <width>75</width>
        <height>24</height>
@@ -68,7 +68,7 @@
     <widget class="QPushButton" name="btn_output">
      <property name="geometry">
       <rect>
-       <x>450</x>
+       <x>360</x>
        <y>80</y>
        <width>75</width>
        <height>24</height>
@@ -122,7 +122,7 @@
       <rect>
        <x>10</x>
        <y>20</y>
-       <width>431</width>
+       <width>341</width>
        <height>21</height>
       </rect>
      </property>
@@ -136,7 +136,7 @@
     <widget class="QPushButton" name="btn_input_2">
      <property name="geometry">
       <rect>
-       <x>450</x>
+       <x>360</x>
        <y>20</y>
        <width>75</width>
        <height>24</height>
@@ -150,10 +150,10 @@
    <widget class="QPushButton" name="btn_start">
     <property name="geometry">
      <rect>
-      <x>260</x>
-      <y>550</y>
-      <width>75</width>
-      <height>24</height>
+      <x>314</x>
+      <y>410</y>
+      <width>81</width>
+      <height>31</height>
      </rect>
     </property>
     <property name="font">
@@ -162,16 +162,16 @@
      </font>
     </property>
     <property name="text">
-     <string>Start</string>
+     <string>START</string>
     </property>
    </widget>
    <widget class="QGroupBox" name="grp_options">
     <property name="geometry">
      <rect>
-      <x>10</x>
-      <y>170</y>
-      <width>531</width>
-      <height>81</height>
+      <x>480</x>
+      <y>0</y>
+      <width>211</width>
+      <height>111</height>
      </rect>
     </property>
     <property name="title">
@@ -180,8 +180,8 @@
     <widget class="QCheckBox" name="chk_auto_color">
      <property name="geometry">
       <rect>
-       <x>350</x>
-       <y>10</y>
+       <x>10</x>
+       <y>20</y>
        <width>181</width>
        <height>20</height>
       </rect>
@@ -194,7 +194,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>40</y>
+       <y>80</y>
        <width>161</width>
        <height>20</height>
       </rect>
@@ -206,8 +206,8 @@
     <widget class="QCheckBox" name="chk_auto_color_2">
      <property name="geometry">
       <rect>
-       <x>350</x>
-       <y>30</y>
+       <x>10</x>
+       <y>40</y>
        <width>181</width>
        <height>20</height>
       </rect>
@@ -219,8 +219,8 @@
     <widget class="QCheckBox" name="chk_auto_color_3">
      <property name="geometry">
       <rect>
-       <x>350</x>
-       <y>50</y>
+       <x>10</x>
+       <y>60</y>
        <width>181</width>
        <height>20</height>
       </rect>
@@ -233,10 +233,10 @@
    <widget class="QProgressBar" name="pb_progress">
     <property name="geometry">
      <rect>
-      <x>550</x>
+      <x>460</x>
       <y>10</y>
       <width>16</width>
-      <height>521</height>
+      <height>391</height>
      </rect>
     </property>
     <property name="layoutDirection">
@@ -255,10 +255,10 @@
    <widget class="QTextBrowser" name="text_log">
     <property name="geometry">
      <rect>
-      <x>330</x>
-      <y>260</y>
+      <x>480</x>
+      <y>120</y>
       <width>211</width>
-      <height>271</height>
+      <height>281</height>
      </rect>
     </property>
     <property name="html">
@@ -272,20 +272,53 @@ li.checked::marker { content: &quot;\2612&quot;; }
 &lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
     </property>
    </widget>
-   <widget class="QLabel" name="lbl_view">
+   <widget class="QListWidget" name="lst_view">
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>260</y>
-      <width>301</width>
-      <height>271</height>
+      <y>180</y>
+      <width>441</width>
+      <height>221</height>
      </rect>
     </property>
-    <property name="frameShape">
-     <enum>QFrame::Box</enum>
+    <property name="verticalScrollBarPolicy">
+     <enum>Qt::ScrollBarAlwaysOff</enum>
     </property>
-    <property name="text">
-     <string>View</string>
+    <property name="editTriggers">
+     <set>QAbstractItemView::NoEditTriggers</set>
+    </property>
+    <property name="selectionMode">
+     <enum>QAbstractItemView::NoSelection</enum>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>256</width>
+      <height>256</height>
+     </size>
+    </property>
+    <property name="horizontalScrollMode">
+     <enum>QAbstractItemView::ScrollPerPixel</enum>
+    </property>
+    <property name="movement">
+     <enum>QListView::Static</enum>
+    </property>
+    <property name="flow">
+     <enum>QListView::LeftToRight</enum>
+    </property>
+    <property name="isWrapping" stdset="0">
+     <bool>false</bool>
+    </property>
+    <property name="gridSize">
+     <size>
+      <width>264</width>
+      <height>264</height>
+     </size>
+    </property>
+    <property name="viewMode">
+     <enum>QListView::IconMode</enum>
+    </property>
+    <property name="uniformItemSizes">
+     <bool>true</bool>
     </property>
    </widget>
   </widget>
