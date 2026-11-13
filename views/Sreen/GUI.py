@@ -13,6 +13,9 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(704, 446)
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap("./resources/logo.ico"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        MainWindow.setWindowIcon(icon)
         self.centralwidget = QtWidgets.QWidget(parent=MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.grp_browse = QtWidgets.QGroupBox(parent=self.centralwidget)
@@ -101,7 +104,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "AutoRecoveryJpeg"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "AutoRecoveryJpeg v1.1.0"))
         self.grp_browse.setTitle(_translate("MainWindow", "Browse"))
         self.btn_input.setText(_translate("MainWindow", "input"))
         self.btn_output.setText(_translate("MainWindow", "output"))
