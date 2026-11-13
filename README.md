@@ -46,7 +46,7 @@ Thanks to the developers and communities behind these resources.
 
 ## 🚀 Running the Application
 > [!Note]
-> Run from the folder that contains `Tool/` (`JpegRecovery.exe`). The CLI switches to the script folder automatically; the module and the GUI do not.
+> Get the files `mcudecode`, `jpgfix2`, and `jpegsize` from the [JpegMCU-Toolkit](https://github.com/VQD-BSV-Official/JpegMCU-Toolkit) repository. Put in folder `tool`
 
 - **Libs**
 ```
