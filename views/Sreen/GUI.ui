@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>704</width>
+    <width>730</width>
     <height>446</height>
    </rect>
   </property>
@@ -15,7 +15,7 @@
   </property>
   <property name="windowIcon">
    <iconset>
-    <normaloff>./resources/logo.ico</normaloff>./resources/logo.ico</iconset>
+    <normaloff>resources/logo.ico</normaloff>resources/logo.ico</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QGroupBox" name="grp_browse">
@@ -23,8 +23,8 @@
      <rect>
       <x>10</x>
       <y>0</y>
-      <width>441</width>
-      <height>171</height>
+      <width>471</width>
+      <height>131</height>
      </rect>
     </property>
     <property name="title">
@@ -34,7 +34,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>50</y>
+       <y>20</y>
        <width>341</width>
        <height>21</height>
       </rect>
@@ -50,7 +50,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>80</y>
+       <y>50</y>
        <width>341</width>
        <height>21</height>
       </rect>
@@ -60,7 +60,7 @@
      <property name="geometry">
       <rect>
        <x>360</x>
-       <y>50</y>
+       <y>20</y>
        <width>75</width>
        <height>24</height>
       </rect>
@@ -73,7 +73,7 @@
      <property name="geometry">
       <rect>
        <x>360</x>
-       <y>80</y>
+       <y>50</y>
        <width>75</width>
        <height>24</height>
       </rect>
@@ -86,7 +86,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>130</y>
+       <y>100</y>
        <width>141</width>
        <height>21</height>
       </rect>
@@ -99,7 +99,7 @@
      <property name="geometry">
       <rect>
        <x>160</x>
-       <y>130</y>
+       <y>100</y>
        <width>141</width>
        <height>21</height>
       </rect>
@@ -112,7 +112,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>110</y>
+       <y>80</y>
        <width>291</width>
        <height>16</height>
       </rect>
@@ -121,33 +121,40 @@
       <string>Encrypted extension:            Encrypted part size:</string>
      </property>
     </widget>
-    <widget class="QLineEdit" name="le_input_2">
+    <widget class="QToolButton" name="tbtn_1">
      <property name="geometry">
       <rect>
-       <x>10</x>
+       <x>440</x>
        <y>20</y>
-       <width>341</width>
-       <height>21</height>
+       <width>21</width>
+       <height>22</height>
       </rect>
      </property>
-     <property name="inputMask">
-      <string/>
+     <property name="font">
+      <font>
+       <bold>true</bold>
+      </font>
      </property>
      <property name="text">
-      <string/>
+      <string>...</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="btn_input_2">
+    <widget class="QToolButton" name="tbtn_2">
      <property name="geometry">
       <rect>
-       <x>360</x>
-       <y>20</y>
-       <width>75</width>
-       <height>24</height>
+       <x>440</x>
+       <y>50</y>
+       <width>21</width>
+       <height>22</height>
       </rect>
      </property>
+     <property name="font">
+      <font>
+       <bold>true</bold>
+      </font>
+     </property>
      <property name="text">
-      <string>input</string>
+      <string>...</string>
      </property>
     </widget>
    </widget>
@@ -172,7 +179,7 @@
    <widget class="QGroupBox" name="grp_options">
     <property name="geometry">
      <rect>
-      <x>480</x>
+      <x>510</x>
       <y>0</y>
       <width>211</width>
       <height>111</height>
@@ -237,7 +244,7 @@
    <widget class="QProgressBar" name="pb_progress">
     <property name="geometry">
      <rect>
-      <x>460</x>
+      <x>490</x>
       <y>10</y>
       <width>16</width>
       <height>391</height>
@@ -259,7 +266,7 @@
    <widget class="QTextBrowser" name="text_log">
     <property name="geometry">
      <rect>
-      <x>480</x>
+      <x>510</x>
       <y>120</y>
       <width>211</width>
       <height>281</height>
@@ -280,9 +287,9 @@ li.checked::marker { content: &quot;\2612&quot;; }
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>180</y>
-      <width>441</width>
-      <height>221</height>
+      <y>140</y>
+      <width>471</width>
+      <height>261</height>
      </rect>
     </property>
     <property name="verticalScrollBarPolicy">

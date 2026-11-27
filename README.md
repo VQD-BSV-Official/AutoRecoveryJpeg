@@ -95,6 +95,9 @@ pyinstaller --noconfirm --onefile --windowed --icon "resources/logo.ico" --name 
 
 
 ## Usage - 🎬 Demo Video
-<a href="https://youtu.be/shIFJ2Jxqns">
-  <img src="https://img.youtube.com/vi/shIFJ2Jxqns/maxresdefault.jpg" width="600">
-</a>
+> [!NOTE]
+> Email me for paid file-recovery requests (fees apply). Questions and issues will be answered as soon as possible.
+
+[![Automatic repairing JPEG files encoded by ransomware](https://ytcards.demolab.com/?id=shIFJ2Jxqns&title=Automatic+repairing+JPEG+files+encoded+by+ransomware&lang=en&background_color=%230d1117&title_color=%23ffffff&stats_color=%23dedede&max_title_lines=1&width=250&border_radius=5 "
+Automatic repairing JPEG files encoded by ransomware")](https://youtu.be/shIFJ2Jxqns)
+
