@@ -1,0 +1,392 @@
+// AutoRecoveryJpeg v1.1.0 – giao diện Slint (light), dựng theo ảnh thiết kế.
+// Cửa sổ 730x446 như file GUI.ui gốc.
+import { ScrollView } from "std-widgets.slint";
+
+export struct LogLine { status: string, text: string, dim: bool }
+export struct Thumb { img: image, name: string, path: string }
+
+// ───────── Bảng màu ─────────
+global Pal {
+    out property <color> bg: #f3f5fa;
+    out property <color> card: #ffffff;
+    out property <color> card-border: #e3e7ef;
+    out property <color> field-border: #9aa3b5;
+    out property <color> field-bg: #f8f9fc;
+    out property <color> accent: #2f5be7;
+    out property <color> text: #1f2430;
+    out property <color> muted: #5b6577;
+    out property <color> ok: #1f8a4c;
+    out property <color> bad: #c62828;
+}
+
+// ───────── Thẻ có tiêu đề ─────────
+component Card inherits Rectangle {
+    in property <string> title;
+    background: Pal.card;
+    border-radius: 10px;
+    border-width: 1px;
+    border-color: Pal.card-border;
+    VerticalLayout {
+        padding: 10px;
+        padding-top: 6px;
+        spacing: 6px;
+        Text { text: root.title; font-size: 13px; font-weight: 600; color: Pal.muted; }
+        VerticalLayout { spacing: 6px; @children }
+    }
+}
+
+// ───────── Ô nhập ─────────
+component Field inherits Rectangle {
+    in-out property <string> text <=> ti.text;
+    in property <string> placeholder;
+    in property <bool> mono: false;
+    min-height: 24px;
+    border-radius: 7px;
+    border-width: 1.5px;
+    border-color: ti.has-focus ? Pal.accent : Pal.field-border;
+    background: Pal.field-bg;
+    clip: true;
+    ti := TextInput {
+        x: 8px;
+        width: parent.width - 16px;
+        height: self.preferred-height;
+        y: (parent.height - self.height) / 2;
+        font-size: 12px;
+        color: Pal.text;
+        single-line: true;
+        font-family: root.mono ? "Consolas" : "";
+    }
+    if ti.text == "": Text {
+        x: 8px;
+        text: root.placeholder;
+        font-size: 12px;
+        color: #a3abbb;
+        vertical-alignment: center;
+        height: parent.height;
+    }
+}
+
+// ───────── Nút ─────────
+component PillButton inherits Rectangle {
+    in property <string> label;
+    in property <bool> primary: false;
+    in property <bool> active: true;
+    in property <length> font: 12px;
+    callback clicked;
+    border-radius: primary ? 10px : 7px;
+    border-width: primary ? 0px : 1.5px;
+    border-color: Pal.field-border;
+    background: !active ? #9db1f0
+        : primary ? (ta.pressed ? #2449c4 : ta.has-hover ? #3a66f0 : Pal.accent)
+        : (ta.pressed ? #e2e7f3 : ta.has-hover ? #eef1f8 : Pal.field-bg);
+    ta := TouchArea {
+        enabled: root.active;
+        mouse-cursor: root.active ? MouseCursor.pointer : MouseCursor.default;
+        clicked => { root.clicked(); }
+    }
+    Text {
+        width: 100%;
+        height: 100%;
+        text: root.label;
+        font-size: root.font;
+        font-weight: root.primary ? 800 : 500;
+        color: root.primary ? #ffffff : Pal.text;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+}
+
+// ───────── Checkbox ─────────
+component Check inherits Rectangle {
+    in-out property <bool> checked;
+    in property <string> label;
+    min-height: 20px;
+    HorizontalLayout {
+        spacing: 8px;
+        alignment: start;
+        Rectangle {
+            width: 16px;
+            height: 16px;
+            y: (parent.height - self.height) / 2;
+            border-radius: 4px;
+            border-width: 1.5px;
+            border-color: root.checked ? Pal.accent : Pal.field-border;
+            background: root.checked ? Pal.accent : #ffffff;
+            if root.checked: Path {
+                width: 100%;
+                height: 100%;
+                viewbox-width: 16;
+                viewbox-height: 16;
+                commands: "M 4 8.5 L 7 11.5 L 12 5";
+                stroke: #ffffff;
+                stroke-width: 2px;
+                stroke-line-cap: round;
+                stroke-line-join: round;
+            }
+        }
+        Text { text: root.label; font-size: 12px; color: Pal.text; vertical-alignment: center; }
+    }
+    TouchArea {
+        mouse-cursor: MouseCursor.pointer;
+        clicked => { root.checked = !root.checked; }
+    }
+}
+
+export component AppWindow inherits Window {
+    title: "AutoRecoveryJpeg v1.1.0";
+    preferred-width: 730px;
+    preferred-height: 446px;
+    min-width: 730px;
+    min-height: 446px;
+    background: Pal.bg;
+    default-font-family: "Inter";
+
+    // ── Dữ liệu 2 chiều với Rust ──
+    in-out property <string> input-path;
+    in-out property <string> output-path;
+    in-out property <string> ext: "JPG";
+    in-out property <string> part-size: "153605";
+    in-out property <bool> opt-color: false;
+    in-out property <bool> opt-thumb: false;
+    in-out property <bool> opt-mcu: false;
+    in-out property <bool> opt-sub: false;
+
+    in property <[LogLine]> log;
+    in property <[Thumb]> thumbs;
+    in property <int> done: 0;
+    in property <int> total: 0;
+    in property <bool> running: false;
+
+    callback pick-input();
+    callback pick-output();
+    callback open-input();
+    callback open-output();
+    callback start();
+    callback open-file(string);
+
+    property <length> tile: max(40px, gal.visible-height - 8px);
+    property <int> thumb-count: root.thumbs.length;
+    property <int> log-count: root.log.length;
+    property <float> ratio: root.total > 0 ? clamp(root.done / root.total, 0, 1) : 0;
+
+    // Tự cuộn tới ảnh / dòng log mới nhất khi đang chạy
+    changed thumb-count => {
+        if (root.running) {
+            gal.content-x = min(0px, gal.visible-width - gal.content-width);
+        }
+    }
+    changed log-count => {
+        logsv.content-y = min(0px, logsv.visible-height - logsv.content-height);
+    }
+
+    VerticalLayout {
+        padding: 10px;
+        spacing: 10px;
+
+        HorizontalLayout {
+            spacing: 10px;
+
+            // ───────── Cột trái ─────────
+            VerticalLayout {
+                horizontal-stretch: 1;
+                spacing: 10px;
+
+                Card {
+                    title: "Browse";
+                    vertical-stretch: 0;
+                    preferred-height: 136px;
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Field { text <=> root.input-path; placeholder: "Folder with encrypted file"; }
+                        PillButton { label: "input"; width: 74px; clicked => { root.pick-input(); } }
+                        PillButton { label: "..."; width: 26px; clicked => { root.open-input(); } }
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Field { text <=> root.output-path; placeholder: "Folder for repaired JPEG file"; }
+                        PillButton { label: "output"; width: 74px; clicked => { root.pick-output(); } }
+                        PillButton { label: "..."; width: 26px; clicked => { root.open-output(); } }
+                    }
+                    HorizontalLayout {
+                        spacing: 12px;
+                        VerticalLayout {
+                            width: 150px;
+                            spacing: 3px;
+                            Text { text: "Encrypted extension:"; font-size: 11px; color: Pal.muted; }
+                            Field { text <=> root.ext; }
+                        }
+                        VerticalLayout {
+                            width: 150px;
+                            spacing: 3px;
+                            Text { text: "Encrypted part size:"; font-size: 11px; color: Pal.muted; }
+                            Field { text <=> root.part-size; }
+                        }
+                        // Ô đệm co giãn: không có nó, hàng này (2 khối cố định 150px)
+                        // giới hạn max-width của cả thẻ => cửa sổ không kéo rộng được
+                        Rectangle { horizontal-stretch: 1; }
+                    }
+                }
+
+                // Thư viện ảnh đã sửa (cuộn ngang)
+                Rectangle {
+                    vertical-stretch: 1;
+                    min-height: 120px;
+                    background: Pal.card;
+                    border-radius: 10px;
+                    border-width: 1px;
+                    border-color: Pal.card-border;
+                    clip: true;
+
+                    gal := ScrollView {
+                        x: 4px;
+                        y: 4px;
+                        width: parent.width - 8px;
+                        height: parent.height - 8px;
+                        content-width: max(self.visible-width, root.thumbs.length * (root.tile + 8px));
+                        content-height: self.visible-height;
+
+                        if root.thumbs.length == 0: Text {
+                            x: 0px;
+                            y: 0px;
+                            width: gal.visible-width;
+                            height: gal.visible-height;
+                            text: "The edited image will appear here";
+                            color: #a3abbb;
+                            font-size: 13px;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                        }
+
+
+                        for t[i] in root.thumbs: Rectangle {
+                            x: i * (root.tile + 8px);
+                            y: 0px;
+                            width: root.tile;
+                            height: root.tile;
+                            border-radius: 8px;
+                            clip: true;
+                            background: mod(i, 2) == 0 ? #dde5f7 : #e1efe3;
+                            Image { source: t.img; width: 100%; height: 100%; image-fit: contain; }
+                            ta := TouchArea {
+                                mouse-cursor: MouseCursor.pointer;
+                                clicked => { root.open-file(t.path); }
+                            }
+                            if ta.has-hover: Rectangle {
+                                y: parent.height - 22px;
+                                height: 22px;
+                                background: #000000a0;
+                                Text {
+                                    x: 6px;
+                                    width: parent.width - 12px;
+                                    text: t.name;
+                                    color: #ffffff;
+                                    font-size: 11px;
+                                    vertical-alignment: center;
+                                    overflow: elide;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ───────── Cột phải ─────────
+            VerticalLayout {
+                width: 215px;
+                spacing: 10px;
+
+                Card {
+                    title: "Options";
+                    vertical-stretch: 0;
+                    preferred-height: 0px;
+                    Check { label: "Auto-adjust colors"; checked <=> root.opt-color; }
+                    Check { label: "Process subfolders (beta)"; checked <=> root.opt-sub; }
+                }
+
+                Rectangle {
+                    vertical-stretch: 1;
+                    min-height: 100px;
+                    background: Pal.card;
+                    border-radius: 10px;
+                    border-width: 1px;
+                    border-color: Pal.card-border;
+                    clip: true;
+
+                    logsv := ScrollView {
+                        x: 6px;
+                        y: 6px;
+                        width: parent.width - 12px;
+                        height: parent.height - 12px;
+                        content-width: self.visible-width;
+                        content-height: root.log.length * 18px + 4px;
+
+                        for l[i] in root.log: Rectangle {
+                            y: i * 18px;
+                            height: 18px;
+                            width: logsv.visible-width;
+                            HorizontalLayout {
+                                spacing: 6px;
+                                padding-left: 4px;
+                                if l.status != "": Text {
+                                    width: 38px;
+                                    text: l.status;
+                                    font-family: "Consolas";
+                                    font-size: 11px;
+                                    font-weight: 600;
+                                    color: l.status == "OK..." ? Pal.ok : Pal.bad;
+                                    vertical-alignment: center;
+                                }
+                                Text {
+                                    text: l.text;
+                                    font-family: "Consolas";
+                                    font-size: 11px;
+                                    color: l.dim ? Pal.muted : Pal.text;
+                                    vertical-alignment: center;
+                                    overflow: elide;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ───────── Thanh tiến trình + START ─────────
+        HorizontalLayout {
+            spacing: 14px;
+            height: 40px;
+            VerticalLayout {
+                alignment: center;
+                Rectangle {
+                    height: 8px;
+                    border-radius: 4px;
+                    background: #e4e7f0;
+                    Rectangle {
+                        x: 0px;
+                        width: parent.width * root.ratio;
+                        border-radius: 4px;
+                        background: Pal.accent;
+                        animate width { duration: 150ms; easing: ease-out; }
+                    }
+                }
+            }
+            Text {
+                text: root.done + " / " + root.total;
+                font-size: 15px;
+                font-weight: 500;
+                color: Pal.text;
+                vertical-alignment: center;
+                horizontal-alignment: right;
+                min-width: 56px;
+            }
+            PillButton {
+                width: 100px;
+                label: "START";
+                font: 15px;
+                primary: true;
+                active: !root.running;
+                clicked => { root.start(); }
+            }
+        }
+    }
+}

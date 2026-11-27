@@ -1,0 +1,40 @@
+[package]
+name = "AutoRecoveryJpeg"
+description = "Auto Recovery JPEG Tool"
+version = "1.1.0"
+authors = ["(c) 2026 Vũ Quang Đại <QDai.Dev08@gmail.com>"]
+edition = "2021"
+
+
+[lib]
+name = "auto_recovery_jpeg"
+path = "src/lib.rs"
+
+[[bin]]
+name = "AutoRecoveryJpeg"
+path = "src/main.rs"
+
+[[bin]]
+name = "AutoRecoveryJpeg-CLI"
+path = "src/cli.rs"
+
+[dependencies]
+slint = "1.8"
+image = { version = "0.25", default-features = false, features = ["jpeg"] }
+rfd = "0.15"
+regex = "1"
+hex = "0.4"
+anyhow = "1"
+walkdir = "2"
+
+[build-dependencies]
+slint-build = "1.8"
+winres = "0.1"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+
+# Windows: ẩn cửa sổ console khi chạy release (xem #![windows_subsystem] trong main.rs)
